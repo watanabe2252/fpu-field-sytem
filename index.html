@@ -55,14 +55,46 @@
 </head>
 <body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden">
 
-    <div id="welcome-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
+    <!-- ===================================================
+       0. ログイン画面 (認証の壁)
+       =================================================== -->
+    <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
+            <div class="text-center space-y-1">
+                <h2 class="text-base font-black text-white flex items-center justify-center gap-2">
+                    <i class="fas fa-lock text-accentBlue"></i> 固定回線システム ログイン
+                </h2>
+                <p class="text-[10px] text-slate-500 font-bold">ポジション別アカウントでログインしてください</p>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold">メールアドレス / Email</label>
+                    <input type="email" id="login-email" placeholder="example@fpu.system" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all font-mono">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold">パスワード / Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all">
+                </div>
+                <button onclick="handleLogin()" class="w-full bg-accentBlue text-bgDark font-black text-sm py-3 rounded-xl transition hover:bg-sky-400 active:scale-[0.98] mt-2 shadow-lg">
+                    ログイン認証
+                </button>
+                <div id="login-error" class="text-center text-[11px] font-bold text-rose-400 bg-rose-950/20 border border-rose-500/30 p-2 rounded-xl empty:hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================
+       1. 起動時：大会ファイル選択画面
+       =================================================== -->
+    <div id="welcome-view" class="fixed inset-0 bg-bgDark z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
             
             <div class="flex justify-between items-center mb-6 shrink-0">
                 <h2 class="text-base font-black text-white flex items-center gap-2">
                     <i class="fas fa-folder-open text-accentBlue"></i> 大会ファイルを選択
                 </h2>
-                <button onclick="openCreateModal()" class="bg-emerald-950/40 border border-accentGreen text-accentGreen text-xs font-bold px-4 py-2 rounded-full hover:bg-accentGreen hover:text-bgDark transition-all">
+                <!-- 管理者のみ表示される新規作成ボタン -->
+                <button onclick="openCreateModal()" id="btn-welcome-create" class="hidden bg-emerald-950/40 border border-accentGreen text-accentGreen text-xs font-bold px-4 py-2 rounded-full hover:bg-accentGreen hover:text-bgDark transition-all">
                     <i class="fas fa-plus mr-1"></i> 新規作成
                 </button>
             </div>
@@ -72,9 +104,15 @@
             </div>
 
             <div id="system-status-msg" class="text-rose-400 text-[11px] font-bold text-center mt-3 empty:hidden bg-rose-950/20 border border-rose-500/30 p-2 rounded-xl"></div>
+            
+            <!-- ログアウトボタン -->
+            <button onclick="handleLogout()" class="mt-4 border border-borderStroke text-slate-500 font-bold text-xs py-2 rounded-xl hover:text-rose-400 transition shrink-0 text-center">
+                <i class="fas fa-sign-out-alt mr-1"></i> アカウントサインアウト
+            </button>
         </div>
     </div>
 
+    <!-- 1-2. 新規作成ポップアップモーダル -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -97,39 +135,73 @@
         </div>
     </div>
 
+    <!-- 1-3. 番組設定（ID・名称）編集ポップアップモーダル -->
     <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
-                <i class="fas fa-edit"></i> 番組名の変更
+                <i class="fas fa-edit"></i> 番組設定の編集
             </h3>
-            <div>
-                <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称</label>
-                <input type="text" id="edit-program-title" placeholder="新しい番組名を入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID / Program ID (半角英数字)</label>
+                    <input type="text" id="edit-program-id" placeholder="新しい番組IDを入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称</label>
+                    <input type="text" id="edit-program-title" placeholder="新しい番組名を入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                </div>
             </div>
             <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
                 <button onclick="closeEditProgramModal()" class="border border-borderStroke text-slate-400 px-4 py-2.5 rounded-xl hover:bg-slate-800 transition">キャンセル</button>
-                <button onclick="submitEditProgramTitle()" class="bg-accentBlue text-bgDark px-5 py-2.5 rounded-xl hover:bg-sky-600 transition">変更を保存</button>
+                <button onclick="submitEditProgram()" class="bg-accentBlue text-bgDark px-5 py-2.5 rounded-xl hover:bg-sky-600 transition">変更を保存</button>
             </div>
         </div>
     </div>
 
-    <div class="app-header sticky top-0 z-40 bg-cardBg/90 backdrop-blur-md px-5 py-4 border-b border-borderStroke flex justify-between items-center">
-        <div class="flex items-center gap-2 max-w-[60%] min-w-0">
+    <!-- 1-4. 番組複製 ポップアップモーダル -->
+    <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
+            <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
+                <i class="fas fa-copy"></i> 番組ファイルの複製 (コピー)
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組ID (半角英数字)</label>
+                    <input type="text" id="dup-program-id" placeholder="例: ekiden-2026-day2" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組名・大会名称</label>
+                    <input type="text" id="dup-program-title" placeholder="例: 全日本大学駅伝2026(2日目)" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                </div>
+            </div>
+            <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
+                <button onclick="closeDuplicateModal()" class="border border-borderStroke text-slate-400 px-4 py-2.5 rounded-xl hover:bg-slate-800 transition">キャンセル</button>
+                <button onclick="submitDuplicateProgram()" class="bg-amber-400 text-bgDark px-5 py-2.5 rounded-xl hover:bg-amber-500 transition">複製を実行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================
+       2. メインアプリ共通ヘッダー
+       =================================================== -->
+    <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-5 py-4 border-b border-borderStroke flex justify-between items-center">
+        <div class="flex items-center gap-2 max-w-[50%] min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
-            <button onclick="openEditProgramModal()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition" title="番組名を編集">
+            <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition" title="番組情報を編集">
                 <i class="fas fa-edit"></i>
             </button>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
             <button onclick="location.reload()" class="text-[10px] bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition">大会変更</button>
-            <div class="status-badge flex items-center gap-2 text-[10px] font-mono font-bold bg-bgDark border border-borderStroke px-3 py-1.5 rounded-full text-slate-300">
-                <div class="pulse"></div><span>CLOUD CONNECTED</span>
-            </div>
+            <div id="user-role-badge" class="text-[9px] font-mono font-black px-2 py-1 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
         </div>
     </div>
 
+    <!-- ===================================================
+       VIEW 1: ダッシュボードモニター画面
+       =================================================== -->
     <div id="view-dashboard" class="view-content active p-4 space-y-4">
-        
+        <!-- クイックセンターメモ入力フォーム -->
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
@@ -144,7 +216,6 @@
                         <option value="prod" selected>本番</option>
                     </select>
                     <input type="text" id="dash-channel-input" placeholder="Ch (例: C2H)" class="bg-bgDark border border-borderStroke rounded-xl px-3 py-2 text-amber-400 text-xs font-black outline-none focus:border-accentBlue uppercase placeholder-slate-600 w-[90px]">
-                    
                     <input type="text" id="dash-center-memo" placeholder="状況メモを入力" class="flex-1 bg-bgDark border border-borderStroke rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-accentBlue placeholder-slate-600 transition-all min-w-[150px]">
                     <button onclick="submitDashCenterMemo()" class="bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs px-4 rounded-xl transition flex items-center gap-1 shrink-0 ml-auto md:ml-0">
                         <i class="fas fa-paper-plane"></i> 更新
@@ -155,6 +226,7 @@
         </div>
 
         <div class="grid grid-cols-1 gap-6">
+            <!-- 本線ブロック -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
                 <h2 class="text-base font-black text-accentBlue border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
@@ -165,6 +237,7 @@
                 </table>
             </div>
 
+            <!-- リレーブロック -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
                 <h2 class="text-base font-black text-accentOrange border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-route"></i> 中継所リレーリンク
@@ -175,6 +248,7 @@
                 </table>
             </div>
 
+            <!-- 予備ブロック -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
                 <h2 class="text-base font-black text-slate-300 border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
@@ -187,6 +261,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       VIEW 2: 現場入力画面
+       =================================================== -->
     <div id="view-input" class="view-content p-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
@@ -262,9 +339,23 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       VIEW 3: メンテナンス画面
+       =================================================== -->
     <div id="view-maintenance" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
+            <!-- アカウント権限管理へのショートカット（管理者のみ踏める） -->
+            <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex justify-between items-center">
+                <div>
+                    <h3 class="text-xs font-black text-amber-400 uppercase tracking-wider"><i class="fas fa-users-cog mr-1"></i> ポジション別 アカウント権限管理</h3>
+                    <p class="text-[10px] text-slate-400 font-bold mt-0.5">現場各ポジションの権限をアプリ内で動的に変更します。</p>
+                </div>
+                <button onclick="switchView('useradmin')" class="bg-amber-400 hover:bg-amber-500 text-bgDark font-black text-xs px-4 py-2.5 rounded-xl transition shrink-0 ml-2">
+                    管理画面へ
+                </button>
+            </div>
+
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-plus-circle text-amber-400"></i> 受信点（リンク）の新規追加
@@ -293,42 +384,42 @@
                     <h2 class="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
                         <i class="fas fa-sort-amount-down text-accentBlue"></i> グループ別・ドラッグ並び替え
                     </h2>
-                    <p class="text-[10px] text-slate-400 font-bold mt-1">※各グループ内でドラッグ後、最下部のボタンで一括確定・保存します。</p>
                 </div>
-
-                <div class="space-y-1.5">
-                    <div class="text-[11px] font-black text-accentBlue uppercase tracking-wider flex items-center gap-1">
-                        <i class="fas fa-broadcast-tower text-[10px]"></i> 本線基幹ルート 内の並び順
-                    </div>
-                    <div id="maint-box-main" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div>
-                </div>
-
-                <div class="space-y-1.5 pt-2">
-                    <div class="text-[11px] font-black text-accentOrange uppercase tracking-wider flex items-center gap-1">
-                        <i class="fas fa-route text-[10px]"></i> 中継所リレーリンク 内の並び順
-                    </div>
-                    <div id="maint-box-relay" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div>
-                </div>
-
-                <div class="space-y-1.5 pt-2">
-                    <div class="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                        <i class="fas fa-shield-alt text-[10px]"></i> 予備・特設・ヘリ系統 内の並び順
-                    </div>
-                    <div id="maint-box-sub" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div>
-                </div>
-
+                <div class="space-y-1.5"><div class="text-[11px] font-black text-accentBlue uppercase"><i class="fas fa-broadcast-tower mr-1"></i>本線順序</div><div id="maint-box-main" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div></div>
+                <div class="space-y-1.5 pt-2"><div class="text-[11px] font-black text-accentOrange uppercase"><i class="fas fa-route mr-1"></i>リレー順序</div><div id="maint-box-relay" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div></div>
+                <div class="space-y-1.5 pt-2"><div class="text-[11px] font-black text-slate-400 uppercase"><i class="fas fa-shield-alt mr-1"></i>予備系統順序</div><div id="maint-box-sub" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div></div>
                 <div class="pt-2 border-t border-borderStroke/60">
-                    <button onclick="saveGroupedOrder()" id="btn-save-order" class="w-full bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs py-3 rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
+                    <button onclick="saveGroupedOrder()" class="w-full bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs py-3 rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
                         <i class="fas fa-check-circle"></i> 全グループの並び順を確定して適用
                     </button>
                     <div id="order-status-msg" class="text-[10px] font-bold text-center mt-1.5 empty:hidden"></div>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-40 pb-[env(safe-area-inset-bottom,0px)]">
+    <!-- ===================================================
+       VIEW 4: ポジション別 アカウント権限管理画面 (管理者専用)
+       =================================================== -->
+    <div id="view-useradmin" class="view-content p-4 space-y-6">
+        <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
+                <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
+                    <i class="fas fa-users-cog"></i> ユーザーアカウント権限変更
+                </h2>
+                <button onclick="switchView('maintenance')" class="text-[10px] font-bold text-slate-400 border border-borderStroke px-2 py-1 rounded-md">戻る</button>
+            </div>
+            
+            <p class="text-[10px] text-slate-400 font-bold leading-relaxed">登録されているポジション別アカウントのトグルスイッチを切り替えるだけで、即座に現場権限（ファイル削除や並べ替え可否）が反映されます。</p>
+            
+            <div id="user-role-list-box" class="space-y-3 pt-2">
+                <div class="text-xs text-slate-500 font-mono text-center py-4">ユーザーアカウント一覧を読込中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 固定配置：ボトムナビ -->
+    <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,0px)]">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
             <span class="text-base"><i class="fas fa-chart-bar"></i></span>
             <span class="text-[9px] font-bold">ダッシュボード</span>
@@ -352,11 +443,141 @@
     let activeProgramId = "";
     let activeProgramTitle = "";
     let currentVal = 60;
+    let currentUserRole = "staff";
     
     let sortableInstances = { main: null, relay: null, sub: null };
 
-    window.addEventListener('load', () => { fetchProgramsList(); });
+    // 起動時に認証セッション確認
+    window.addEventListener('load', async () => {
+        if (!sb) return;
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+            await syncUserRoleAndInit(session.user.id, session.user.email);
+        } else {
+            document.getElementById('login-view').classList.replace('hidden', 'flex');
+        }
+    });
 
+    /* ===================================================
+       🔐 認証・ログイン・権限チェック制御
+       =================================================== */
+    async function handleLogin() {
+        if (!sb) return;
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        const errorEl = document.getElementById('login-error');
+        errorEl.innerText = "";
+
+        if(!email || !password) { errorEl.innerText = "⚠️ 入力欄が空です。"; return; }
+
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) { errorEl.innerText = "⚠️ " + error.message; return; }
+
+        await syncUserRoleAndInit(data.user.id, data.user.email);
+    }
+
+    async function handleLogout() {
+        if (!sb) return;
+        await sb.auth.signOut();
+        location.reload();
+    }
+
+    async function syncUserRoleAndInit(userId, email) {
+        // 【強化修正】 admin@fpu.system の場合は最優先で admin 権限をロックオン
+        if (email === 'admin@fpu.system') {
+            currentUserRole = "admin";
+            if (sb) {
+                // user_roles テーブル側にも確実に管理者としてUpsert同期を実行
+                await sb.from('user_roles').upsert({ id: userId, email: email, role: 'admin' }, { onConflict: 'id' });
+            }
+        } else {
+            try {
+                const { data, error } = await sb.from('user_roles').select('role').eq('id', userId).maybeSingle();
+                if(!error && data) {
+                    currentUserRole = data.role;
+                } else {
+                    currentUserRole = "staff";
+                }
+            } catch(e) { currentUserRole = "staff"; }
+        }
+
+        // UI表示の切り替え
+        const badge = document.getElementById('user-role-badge');
+        if(currentUserRole === 'admin') {
+            if(badge) {
+                badge.innerText = "ADMINISTRATOR";
+                badge.className = "text-[9px] font-mono font-black px-2 py-1 rounded bg-amber-950 text-amber-400 border border-amber-500/30";
+            }
+            if(document.getElementById('btn-welcome-create')) document.getElementById('btn-welcome-create').classList.remove('hidden');
+            if(document.getElementById('nav-maintenance')) document.getElementById('nav-maintenance').classList.remove('hidden');
+        } else {
+            if(badge) {
+                badge.innerText = "FIELD STAFF";
+                badge.className = "text-[9px] font-mono font-black px-2 py-1 rounded bg-slate-800 text-slate-400 border border-borderStroke";
+            }
+            if(document.getElementById('btn-welcome-create')) document.getElementById('btn-welcome-create').classList.add('hidden');
+            if(document.getElementById('nav-maintenance')) document.getElementById('nav-maintenance').classList.add('hidden');
+        }
+
+        document.getElementById('login-view').classList.replace('flex', 'hidden');
+        fetchProgramsList();
+    }
+
+    /* ===================================================
+       👥 管理者専用：全ユーザーアカウントの権限変更ロジック
+       =================================================== */
+    async function loadUserRolesList() {
+        if (!sb || currentUserRole !== 'admin') return;
+        const box = document.getElementById('user-role-list-box');
+        box.innerHTML = '<div class="text-xs text-slate-500 font-mono text-center py-4">ユーザー一覧を読み込み中...</div>';
+
+        try {
+            const { data, error } = await sb.from('user_roles').select('*').order('email', { ascending: true });
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                box.innerHTML = data.map(u => {
+                    const isAdmin = (u.role === 'admin');
+                    return `
+                        <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex justify-between items-center">
+                            <div class="truncate pr-2 text-left">
+                                <div class="text-xs font-bold text-slate-200 truncate font-sans font-mono">${u.email}</div>
+                                <div class="text-[9px] font-mono mt-0.5 text-slate-500">UID: ${u.id.substring(0,8)}...</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold ${isAdmin ? 'text-amber-400':'text-slate-500'} font-mono">${u.role.toUpperCase()}</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" ${isAdmin ? 'checked':''} onchange="toggleUserRole('${u.id}', this.checked)" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-checked:after:bg-bgDark"></div>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                box.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-4">ユーザーがいません</div>';
+            }
+        } catch(e) {
+            box.innerHTML = `<div class="text-xs text-rose-400 font-bold text-center py-4">読み込みエラー: ${e.message}</div>`;
+        }
+    }
+
+    async function toggleUserRole(targetUid, isChecked) {
+        if (!sb || currentUserRole !== 'admin') return;
+        const targetRole = isChecked ? 'admin' : 'staff';
+        try {
+            const { error } = await sb.from('user_roles').update({ role: targetRole }).eq('id', targetUid);
+            if (error) throw error;
+            loadUserRolesList();
+        } catch(e) {
+            alert("権限の変更に失敗しました: " + e.message);
+            loadUserRolesList();
+        }
+    }
+
+    /* ===================================================
+       📁 大会ファイルリスト読み込み制御
+       =================================================== */
     async function fetchProgramsList() {
         if (!sb) return;
         const statusEl = document.getElementById('system-status-msg');
@@ -366,20 +587,33 @@
             const { data: progData, error: progErr } = await sb.from('programs').select('*');
             if (progErr) throw progErr;
             if (progData && progData.length > 0) {
-                listBox.innerHTML = progData.map(p => `
-                    <div onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="bg-bgDark/80 border border-borderStroke p-4 rounded-xl flex justify-between items-center cursor-pointer hover:border-accentBlue active:scale-[0.99] transition-all">
-                        <div class="text-left truncate max-w-[75%]">
-                            <div class="text-sm font-black text-slate-100">${p.title}</div>
-                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">ID: ${p.id}</div>
+                listBox.innerHTML = progData.map(p => {
+                    let actionButtons = "";
+                    if (currentUserRole === 'admin') {
+                        actionButtons = `
+                            <button onclick="openDuplicateModal('${p.id}', '${p.title}')" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="このファイルを複製"><i class="fas fa-copy"></i></button>
+                            <button onclick="openEditProgramModalFromList('${p.id}', '${p.title}')" class="text-slate-400 hover:text-accentBlue text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="この設定を編集"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteProgramEntirely('${p.id}', '${p.title}')" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="この大会ファイルを完全に削除"><i class="fas fa-trash-alt"></i></button>
+                        `;
+                    }
+                    return `
+                        <div class="bg-cardBg border border-borderStroke p-4 rounded-xl flex justify-between items-center hover:border-slate-700 transition-all">
+                            <div onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="text-left truncate flex-1 min-w-0 cursor-pointer group">
+                                <div class="text-sm font-black text-slate-100 group-hover:text-accentBlue transition-colors">${p.title}</div>
+                                <div class="text-[10px] text-slate-500 font-mono mt-0.5">ID: ${p.id}</div>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                                ${actionButtons}
+                                <button onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="text-[10px] font-bold bg-slate-800 text-amber-400 px-3 py-2 rounded-md border border-slate-700 hover:border-amber-400 transition">接続</button>
+                            </div>
                         </div>
-                        <span class="text-[10px] font-bold bg-slate-800 text-amber-400 px-2.5 py-1 rounded-md border border-slate-700">接続</span>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else { listBox.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-6">ファイルがありません。</div>'; }
         } catch (err) { statusEl.innerText = `⚠️ 接続失敗: ${err.message}`; }
     }
 
-    function openCreateModal() { document.getElementById('create-modal').classList.replace('hidden', 'flex'); }
+    function openCreateModal() { if(currentUserRole==='admin') document.getElementById('create-modal').classList.replace('hidden', 'flex'); }
     function closeCreateModal() { 
         document.getElementById('create-modal').classList.replace('flex', 'hidden'); 
         document.getElementById('new-program-id').value = ''; 
@@ -387,78 +621,133 @@
     }
 
     async function submitNewProgram() {
-        if (!sb) return;
+        if (!sb || currentUserRole !== 'admin') return;
         const idInput = document.getElementById('new-program-id').value.trim();
         const titleInput = document.getElementById('new-program-title').value.trim();
         
-        if (!idInput) { alert("番組IDを入力してください。"); return; }
-        if (!titleInput) { alert("番組名を入力してください。"); return; }
-        
-        // 半角英数字とハイフン・アンダースコアチェック (簡易版)
-        if (!/^[a-zA-Z0-9-_]+$/.test(idInput)) {
-            alert("番組IDは半角英数字、ハイフン(-)、アンダーバー(_)のみ使用できます。");
-            return;
-        }
+        if (!idInput || !titleInput) { alert("IDと名称の両方を入力してください。"); return; }
+        if (!/^[a-zA-Z0-9-_]+$/.test(idInput)) { alert("IDは半角英数字、ハイフン、アンダーバーのみ利用可能です。"); return; }
 
         try {
             const { error } = await sb.from('programs').insert([{ id: idInput, title: titleInput }]);
-            if (error) {
-                if (error.code === '23505') throw new Error("この番組IDは既に登録されています。別のIDを入力してください。");
-                throw error;
-            }
+            if (error) throw error;
             closeCreateModal(); fetchProgramsList();
         } catch (err) { alert("作成失敗: " + err.message); }
     }
 
-    /* 番組名編集モーダルの制御 */
-    function openEditProgramModal() {
-        if (!activeProgramId) return;
-        document.getElementById('edit-program-title').value = activeProgramTitle;
+    function openEditProgramModalFromHeader() { if (activeProgramId && currentUserRole==='admin') openEditProgramModal(activeProgramId, activeProgramTitle); }
+    function openEditProgramModalFromList(id, title) { if(currentUserRole==='admin') openEditProgramModal(id, title); }
+    let editingTargetId = ""; 
+    function openEditProgramModal(id, title) {
+        editingTargetId = id;
+        document.getElementById('edit-program-id').value = id;
+        document.getElementById('edit-program-title').value = title;
         document.getElementById('edit-program-modal').classList.replace('hidden', 'flex');
     }
     function closeEditProgramModal() {
         document.getElementById('edit-program-modal').classList.replace('flex', 'hidden');
+        document.getElementById('edit-program-id').value = '';
         document.getElementById('edit-program-title').value = '';
+        editingTargetId = "";
     }
-    async function submitEditProgramTitle() {
-        if (!sb || !activeProgramId) return;
+
+    async function submitEditProgram() {
+        if (!sb || !editingTargetId || currentUserRole !== 'admin') return;
+        const newId = document.getElementById('edit-program-id').value.trim();
         const newTitle = document.getElementById('edit-program-title').value.trim();
-        if (!newTitle) { alert("番組名を入力してください。"); return; }
+
+        if (!newId || !newTitle) return;
+        try {
+            if (newId !== editingTargetId) {
+                await sb.from('programs').insert([{ id: newId, title: newTitle }]);
+                await sb.from('links').update({ program_id: newId }).eq('program_id', editingTargetId);
+                await sb.from('records').update({ program_id: newId }).eq('program_id', editingTargetId);
+                await sb.from('programs').delete().eq('id', editingTargetId);
+            } else {
+                await sb.from('programs').update({ title: newTitle }).eq('id', editingTargetId);
+            }
+
+            if (activeProgramId === editingTargetId) {
+                activeProgramId = newId; activeProgramTitle = newTitle;
+                document.getElementById('active-program-display').innerText = activeProgramTitle;
+            }
+            closeEditProgramModal(); fetchProgramsList();
+        } catch (err) { alert("更新失敗: " + err.message); }
+    }
+
+    let duplicateSourceId = "";
+    function openDuplicateModal(id, currentTitle) {
+        if(currentUserRole !== 'admin') return;
+        duplicateSourceId = id;
+        document.getElementById('dup-program-id').value = id + "-copy";
+        document.getElementById('dup-program-title').value = currentTitle + " - コピー";
+        document.getElementById('duplicate-program-modal').classList.replace('hidden', 'flex');
+    }
+    function closeDuplicateModal() {
+        document.getElementById('duplicate-program-modal').classList.replace('flex', 'hidden');
+        duplicateSourceId = "";
+    }
+    async function submitDuplicateProgram() {
+        if (!sb || !duplicateSourceId || currentUserRole !== 'admin') return;
+        const targetId = document.getElementById('dup-program-id').value.trim();
+        const targetTitle = document.getElementById('dup-program-title').value.trim();
 
         try {
-            const { error } = await sb.from('programs').update({ title: newTitle }).eq('id', activeProgramId);
-            if (error) throw error;
+            await sb.from('programs').insert([{ id: targetId, title: targetTitle }]);
+            const { data: sourceLinks } = await sb.from('links').select('*').eq('program_id', duplicateSourceId);
             
-            activeProgramTitle = newTitle;
-            document.getElementById('active-program-display').innerText = activeProgramTitle;
-            closeEditProgramModal();
-        } catch (err) { alert("番組名の変更に失敗しました: " + err.message); }
+            if (sourceLinks && sourceLinks.length > 0) {
+                const duplicatedLinks = sourceLinks.map(l => ({
+                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : "link-" + Date.now() + "-" + Math.random().toString(36).substring(2, 11),
+                    program_id: targetId, name: l.name, category: l.category, sort_order: l.sort_order
+                }));
+                await sb.from('links').insert(duplicatedLinks);
+            }
+            closeDuplicateModal(); fetchProgramsList();
+        } catch (e) { alert("複製失敗: " + e.message); }
+    }
+
+    async function deleteProgramEntirely(id, title) {
+        if(currentUserRole !== 'admin') return;
+        if (!confirm(`大会「${title}」のすべての関連データをクラウドから永久削除しますか？`)) return;
+        try {
+            await sb.from('records').delete().eq('program_id', id);
+            await sb.from('links').delete().eq('program_id', id);
+            await sb.from('programs').delete().eq('id', id);
+            fetchProgramsList();
+        } catch(e) { alert("削除失敗: " + e.message); }
     }
 
     function selectProgramAndStart(id, title) {
         activeProgramId = id; activeProgramTitle = title;
         document.getElementById('active-program-display').innerText = activeProgramTitle;
-        document.getElementById('btn-edit-program').classList.remove('hidden'); // 編集ペンアイコンを表示
+        if(currentUserRole === 'admin') document.getElementById('btn-edit-program').classList.remove('hidden');
         document.getElementById('welcome-view').classList.add('hidden');
-        initDashboard();
-        loadDashboardLinkSelect();
+        initDashboard(); loadDashboardLinkSelect();
     }
 
     function switchView(viewName) {
-        if (!activeProgramId) return;
-        ['dashboard', 'input', 'maintenance'].forEach(v => {
+        if(viewName === 'useradmin' && currentUserRole !== 'admin') return;
+
+        ['dashboard', 'input', 'maintenance', 'useradmin'].forEach(v => {
             const btn = document.getElementById(`nav-${v}`);
             const content = document.getElementById(`view-${v}`);
-            if (v === viewName) { btn.classList.replace('text-slate-500', 'text-accentBlue'); content.classList.add('active'); } 
-            else { btn.classList.replace('text-accentBlue', 'text-slate-500'); content.classList.remove('active'); }
+            if (v === viewName) { 
+                if(btn) btn.classList.replace('text-slate-500', 'text-accentBlue'); 
+                if(content) content.classList.add('active'); 
+            } else { 
+                if(btn) btn.classList.replace('text-accentBlue', 'text-slate-500'); 
+                if(content) content.classList.remove('active'); 
+            }
         });
         if (viewName === 'dashboard') { initDashboard(); loadDashboardLinkSelect(); } 
         else if (viewName === 'input') { loadInputLinks(); } 
         else if (viewName === 'maintenance') { loadRegisteredLinks(); }
+        else if (viewName === 'useradmin') { loadUserRolesList(); }
         window.scrollTo(0,0);
     }
 
-    /* ===================================================＿＿＿
+    /* ===================================================
        【画面1】ダッシュボード表示ロジック
        =================================================== */
     async function initDashboard() {
@@ -594,11 +883,9 @@
             program_id: activeProgramId, link_id: linkId, phase: phase, value: existingVal, field_memo: existingFieldMemo, center_memo: cMemo, fpu_channel: finalCh
         }, { onConflict: 'program_id,link_id,phase' });
 
-        if (error) {
-            statusEl.innerText = "⚠️ 更新失敗: " + error.message; statusEl.className = "text-[11px] font-bold text-rose-400";
-        } else {
-            statusEl.innerText = "✔ センターメモとCh情報を同期しました";
-            statusEl.className = "text-[11px] font-bold text-accentGreen bg-emerald-950/20 p-1 rounded mt-1 inline-block";
+        if (error) { statusEl.innerText = "⚠️ 更新失敗: " + error.message; } 
+        else {
+            statusEl.innerText = "✔ 同期しました";
             document.getElementById('dash-center-memo').value = "";
             document.getElementById('dash-channel-input').value = "";
             setTimeout(() => { statusEl.innerText = ""; }, 3000);
@@ -618,15 +905,10 @@
 
             if (data.length > 0) { 
                 linkSelect.innerHTML = data.map(l => `<option value="${l.id}">${l.name}</option>`).join(''); 
-                
                 const savedLinkId = localStorage.getItem(`fpu_saved_link_${activeProgramId}`);
                 const savedPhase = localStorage.getItem(`fpu_saved_phase_${activeProgramId}`);
-                const savedCustomCh = localStorage.getItem(`fpu_saved_custom_ch_${activeProgramId}`);
-
                 if (savedLinkId && data.some(l => l.id === savedLinkId)) { linkSelect.value = savedLinkId; }
                 if (savedPhase) { phaseSelect.value = savedPhase; }
-                if (savedCustomCh) { document.getElementById('channel-custom-input').value = savedCustomCh; }
-
                 fetchCurrentRecord(); 
             } else { linkSelect.innerHTML = '<option value="">登録回線なし</option>'; }
         }
@@ -635,20 +917,15 @@
     function syncChannelInput() {
         const chBase = document.getElementById('channel-select').value;
         const pol = document.getElementById('polarization-select').value;
-        if(chBase || pol) {
-            document.getElementById('channel-custom-input').value = chBase + pol;
-        }
+        if(chBase || pol) document.getElementById('channel-custom-input').value = chBase + pol;
     }
 
     function saveInputState() {
         if (!activeProgramId) return;
         const linkId = document.getElementById('link-select').value;
         const phase = document.getElementById('phase-select').value;
-        const customCh = document.getElementById('channel-custom-input').value.trim();
-        
         if (linkId) localStorage.setItem(`fpu_saved_link_${activeProgramId}`, linkId);
         if (phase) localStorage.setItem(`fpu_saved_phase_${activeProgramId}`, phase);
-        localStorage.setItem(`fpu_saved_custom_ch_${activeProgramId}`, customCh);
     }
 
     async function fetchCurrentRecord() {
@@ -657,22 +934,15 @@
         const phase = document.getElementById('phase-select').value;
         if (!activeProgramId || !linkId || !phase) return;
 
-        const { data, error } = await sb.from('records').select('value, field_memo, center_memo, fpu_channel').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
-        if (!error && data) { 
+        const { data } = await sb.from('records').select('value, field_memo, center_memo, fpu_channel').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
+        if (data) { 
             currentVal = data.value !== null ? parseInt(data.value, 10) : 60;
             document.getElementById('input-field-memo').value = data.field_memo || "";
             document.getElementById('input-center-memo').value = data.center_memo || "";
-            
-            if (data.fpu_channel) {
-                document.getElementById('channel-custom-input').value = data.fpu_channel;
-                saveInputState();
-            }
+            if (data.fpu_channel) document.getElementById('channel-custom-input').value = data.fpu_channel;
         } else { 
-            currentVal = 60; 
-            document.getElementById('input-field-memo').value = ""; 
-            document.getElementById('input-center-memo').value = "";
-            const savedCustomCh = localStorage.getItem(`fpu_saved_custom_ch_${activeProgramId}`);
-            document.getElementById('channel-custom-input').value = savedCustomCh || "";
+            currentVal = 60; document.getElementById('input-field-memo').value = ""; document.getElementById('input-center-memo').value = "";
+            document.getElementById('channel-custom-input').value = "";
         }
         document.getElementById('db-value').innerText = currentVal;
     }
@@ -687,7 +957,6 @@
         const fMemo = document.getElementById('input-field-memo').value.trim();
         const cMemo = document.getElementById('input-center-memo').value.trim();
         const msgEl = document.getElementById('status-msg');
-        if (!activeProgramId || !linkId || !phase) return;
 
         msgEl.innerText = "⚡ TRANSMITTING...";
         msgEl.className = "text-slate-400 text-[10px] font-mono tracking-wider text-center animate-pulse";
@@ -696,141 +965,101 @@
             { program_id: activeProgramId, link_id: linkId, phase: phase, value: parseInt(currentVal, 10), field_memo: fMemo, center_memo: cMemo, fpu_channel: fpuCh }, 
             { onConflict: 'program_id,link_id,phase' }
         );
-        
-        if (error) { msgEl.innerText = "⚠️ ERROR: " + error.message; msgEl.className = "text-rose-400 text-xs font-bold text-center"; } 
+        if (error) { msgEl.innerText = "⚠️ ERROR: " + error.message; } 
         else { 
             msgEl.innerText = "✔ TRANSMITTED SUCCESS"; 
             msgEl.className = "text-accentGreen text-xs font-bold text-center bg-emerald-950/20 border border-emerald-500/20 p-1 rounded-lg"; 
-            setTimeout(() => { msgEl.innerText = ""; msgEl.className = ""; }, 2000); 
+            setTimeout(() => { msgEl.innerText = ""; }, 2000); 
         }
     }
 
     /* ===================================================
-       【画面3】メンテナンスロジック
+       【画面3】メンテナンスロジック (管理者専用)
        =================================================== */
     async function loadRegisteredLinks() {
-        if (!sb || !activeProgramId) return;
-        document.getElementById('order-status-msg').innerText = "";
-        
+        if (!sb || !activeProgramId || currentUserRole !== 'admin') return;
         const boxMain = document.getElementById('maint-box-main');
         const boxRelay = document.getElementById('maint-box-relay');
         const boxSub = document.getElementById('maint-box-sub');
 
         try {
-            const { data, error } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
-            if (error) throw error;
-
+            const { data } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
             boxMain.innerHTML = ""; boxRelay.innerHTML = ""; boxSub.innerHTML = "";
 
-            if (!data || data.length === 0) {
-                const emptyMsg = '<div class="text-[11px] text-slate-600 italic py-1 text-center">回線がありません</div>';
-                boxMain.innerHTML = emptyMsg; boxRelay.innerHTML = emptyMsg; boxSub.innerHTML = emptyMsg;
-                destroyAllSortable(); return;
+            if (data) {
+                data.forEach(l => {
+                    let targetBox = boxSub;
+                    if (l.category === 'main') targetBox = boxMain;
+                    if (l.category === 'relay') targetBox = boxRelay;
+
+                    const itemHtml = `
+                        <div data-id="${l.id}" class="bg-bgDark border border-borderStroke px-3 py-2.5 rounded-xl flex items-center justify-between gap-2 touch-none cursor-grab active:cursor-grabbing hover:border-slate-700">
+                            <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
+                                <i class="fas fa-bars text-slate-600 text-[11px] mr-1 shrink-0"></i>
+                                <div class="text-xs font-bold text-slate-200 truncate font-sans">${l.name}</div>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button onclick="event.stopPropagation(); editLinkName('${l.id}', '${l.name}')" class="px-2 h-6.5 bg-blue-950/40 border border-blue-500/40 text-accentBlue text-[11px] font-bold rounded hover:bg-accentBlue hover:text-bgDark transition"><i class="fas fa-edit"></i></button>
+                                <button onclick="event.stopPropagation(); deleteLink('${l.id}', '${l.name}')" class="px-2 h-6.5 bg-rose-950/40 border border-rose-500/40 text-rose-400 text-[11px] font-bold rounded hover:bg-rose-500 hover:text-bgDark transition"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>`;
+                    targetBox.insertAdjacentHTML('beforeend', itemHtml);
+                });
             }
-
-            data.forEach(l => {
-                let targetBox = boxSub;
-                if (l.category === 'main') targetBox = boxMain;
-                if (l.category === 'relay') targetBox = boxRelay;
-
-                const itemHtml = `
-                    <div data-id="${l.id}" class="bg-bgDark border border-borderStroke px-3 py-2.5 rounded-xl flex items-center justify-between gap-2 touch-none cursor-grab active:cursor-grabbing hover:border-slate-700 transition-colors">
-                        <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
-                            <i class="fas fa-bars text-slate-600 text-[11px] mr-1 shrink-0"></i>
-                            <div class="text-xs font-bold text-slate-200 truncate font-sans">${l.name}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button onclick="event.stopPropagation(); editLinkName('${l.id}', '${l.name}')" class="px-2 h-6.5 bg-blue-950/40 border border-blue-500/40 text-accentBlue text-[11px] font-bold rounded hover:bg-accentBlue hover:text-bgDark transition"><i class="fas fa-edit"></i></button>
-                            <button onclick="event.stopPropagation(); deleteLink('${l.id}', '${l.name}')" class="px-2 h-6.5 bg-rose-950/40 border border-rose-500/40 text-rose-400 text-[11px] font-bold rounded hover:bg-rose-500 hover:text-bgDark transition"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    </div>`;
-                targetBox.insertAdjacentHTML('beforeend', itemHtml);
-            });
-
-            if(boxMain.children.length === 0) boxMain.innerHTML = '<div class="text-[11px] text-slate-600 italic py-1 text-center">登録なし</div>';
-            if(boxRelay.children.length === 0) boxRelay.innerHTML = '<div class="text-[11px] text-slate-600 italic py-1 text-center">登録なし</div>';
-            if(boxSub.children.length === 0) boxSub.innerHTML = '<div class="text-[11px] text-slate-600 italic py-1 text-center">登録なし</div>';
 
             destroyAllSortable();
             const sortOptions = { animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', forceFallback: true };
-            
             if(boxMain.querySelector('[data-id]')) sortableInstances.main = new Sortable(boxMain, sortOptions);
             if(boxRelay.querySelector('[data-id]')) sortableInstances.relay = new Sortable(boxRelay, sortOptions);
             if(boxSub.querySelector('[data-id]')) sortableInstances.sub = new Sortable(boxSub, sortOptions);
-
         } catch (e) { console.error(e); }
     }
 
     function destroyAllSortable() {
-        Object.keys(sortableInstances).forEach(k => {
-            if (sortableInstances[k]) { sortableInstances[k].destroy(); sortableInstances[k] = null; }
-        });
+        Object.keys(sortableInstances).forEach(k => { if (sortableInstances[k]) { sortableInstances[k].destroy(); sortableInstances[k] = null; } });
     }
 
     async function saveGroupedOrder() {
-        if (!sb) return;
+        if (!sb || currentUserRole !== 'admin') return;
         const statusEl = document.getElementById('order-status-msg');
-        
         const mainIds = sortableInstances.main ? sortableInstances.main.toArray() : [];
         const relayIds = sortableInstances.relay ? sortableInstances.relay.toArray() : [];
         const subIds = sortableInstances.sub ? sortableInstances.sub.toArray() : [];
-
         const totalOrderedIds = [...mainIds, ...relayIds, ...subIds];
-        if (totalOrderedIds.length === 0) return;
 
-        statusEl.innerText = "⚡ 各グループの順序を一括適用中...";
-        statusEl.className = "text-[10px] font-bold text-slate-400 text-center animate-pulse";
-
+        statusEl.innerText = "⚡ 一括適用中...";
         try {
-            const promises = totalOrderedIds.map((id, index) => {
-                return sb.from('links').update({ sort_order: index }).eq('id', id);
-            });
+            const promises = totalOrderedIds.map((id, index) => sb.from('links').update({ sort_order: index }).eq('id', id));
             await Promise.all(promises);
-
-            statusEl.innerText = "✔ グループごとの並び順をクラウドに適用しました！";
-            statusEl.className = "text-[10px] font-bold text-accentGreen text-center bg-emerald-950/20 border border-emerald-500/20 p-1 rounded-lg mt-1 block";
-            setTimeout(() => { statusEl.innerText = ""; }, 4000);
-        } catch (e) {
-            statusEl.innerText = "⚠️ 保存失敗: " + e.message; statusEl.className = "text-[10px] font-bold text-rose-400 text-center";
-        }
+            statusEl.innerText = "✔ クラウドに同期しました";
+            setTimeout(() => { statusEl.innerText = ""; }, 3000);
+        } catch (e) { statusEl.innerText = "⚠️ 保存失敗"; }
     }
 
     async function submitNewLink() {
-        if (!sb || !activeProgramId) return;
+        if (!sb || !activeProgramId || currentUserRole !== 'admin') return;
         const nameInput = document.getElementById('link-name').value.trim();
         const catSelect = document.getElementById('link-category').value;
         if (!nameInput) return;
         try {
             const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
-            const { error } = await sb.from('links').insert([{ id: "link-" + Date.now(), program_id: activeProgramId, name: nameInput, category: catSelect, sort_order: count || 0 }]);
-            if (error) throw error;
-            document.getElementById('link-name').value = ''; 
-            loadRegisteredLinks();
-        } catch (err) { alert("登録エラー: " + err.message); }
+            await sb.from('links').insert([{ id: "link-" + Date.now(), program_id: activeProgramId, name: nameInput, category: catSelect, sort_order: count || 0 }]);
+            document.getElementById('link-name').value = ''; loadRegisteredLinks();
+        } catch (err) { console.error(err); }
     }
 
     async function editLinkName(id, currentName) {
-        const newName = prompt(`「${currentName}」の新しい受信点名を入力してください:`, currentName);
-        if (newName === null) return;
-        const trimmed = newName.trim();
-        if (!trimmed || trimmed === currentName) return;
-
-        try {
-            const { error } = await sb.from('links').update({ name: trimmed }).eq('id', id);
-            if (error) throw error;
-            loadRegisteredLinks();
-        } catch (e) { alert("名前の変更に失敗しました: " + e.message); }
+        if (currentUserRole !== 'admin') return;
+        const newName = prompt("新しい受信点名を入力:", currentName);
+        if (!newName || newName.trim() === currentName) return;
+        await sb.from('links').update({ name: newName.trim() }).eq('id', id); loadRegisteredLinks();
     }
 
     async function deleteLink(id, name) {
-        if (!confirm(`本当に「${name}」を削除してもよろしいですか？\n※関連するすべての電界強度データやメモも同時に消去されます。`)) return;
-
-        try {
-            await sb.from('records').delete().eq('link_id', id);
-            const { error } = await sb.from('links').delete().eq('id', id);
-            if (error) throw error;
-            loadRegisteredLinks();
-        } catch (e) { alert("削除に失敗しました: " + e.message); }
+        if (currentUserRole !== 'admin') return;
+        if (!confirm(`「${name}」を削除しますか？`)) return;
+        await sb.from('records').delete().eq('link_id', id);
+        await sb.from('links').delete().eq('id', id); loadRegisteredLinks();
     }
 </script>
 </body>
