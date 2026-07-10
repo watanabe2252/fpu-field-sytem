@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
     
+    <!-- 📦 外部ライブラリ CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -44,23 +45,23 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 📱 固定ヘッダー（OSステータスバー完全回避 ＋ 最前面レイヤー化） */
+        /* 📱 固定ヘッダー（OSステータスバー回避・最前面） */
         .app-header {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
-            z-index: 1000 !important; /* テーブルの固定列(z-index:20)を完全に殺す絶対優先度 */
-            padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 時計表示の真下に配置 */
+            z-index: 1000 !important; /* すべての要素の最前面 */
+            padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
             background-color: rgba(17, 22, 37, 0.96) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
         }
 
-        /* 🚨 上下固定バーに絶対に侵食されず、スクロール時もヘッダーの下に潜り込ませる独立コンテンツエリア */
+        /* 主コンテンツエリア */
         .view-content {
             display: none;
-            padding-top: calc(env(safe-area-inset-top, 0px) + 95px) !important; /* ヘッダーの厚み分を完全に確保 */
+            padding-top: calc(env(safe-area-inset-top, 0px) + 95px) !important;
             padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
             height: 100vh;
             overflow-y: auto;
@@ -97,12 +98,29 @@
         }
 
         /* 📱 【スマホモード】スタイル定義 */
-        body.mode-mobile th:first-child, 
-        body.mode-mobile td:first-child {
-            position: sticky;
-            left: 0;
+        /* 見出しが左固定列に潰されないよう z-index を 30 に引き上げ */
+        body.mode-mobile .maint-group-title {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 30 !important;
+        }
+
+        body.mode-mobile th:first-child {
+            position: sticky !important;
+            left: 0 !important;
             background-color: #111625 !important;
-            z-index: 20; /* スクロール時に横移動するセルより上、ただしアプリヘッダー(z-1000)の下にくぐる */
+            z-index: 30 !important; /* 左上の「対象回線」ヘッダセルは最優先 */
+            border-right: 2px solid #1e2538;
+            width: 135px !important;
+            min-width: 135px !important;
+            max-width: 135px !important;
+        }
+
+        body.mode-mobile td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            background-color: #111625 !important;
+            z-index: 20 !important; /* データセルの左固定は20(見出しの下、一般セルの上) */
             border-right: 2px solid #1e2538;
             width: 135px !important;
             min-width: 135px !important;
@@ -111,13 +129,14 @@
             word-wrap: break-word;
             white-space: normal;
         }
-        body.mode-mobile th:first-child { z-index: 25; }
+
         body.mode-mobile th:not(:first-child), 
         body.mode-mobile td:not(:first-child) {
             width: 165px !important;
             min-width: 165px !important;
             max-width: 165px !important;
             padding: 5px !important;
+            z-index: 10 !important;
         }
 
         /* 💻 【PCモード】幅等幅スタイル定義 */
@@ -137,6 +156,11 @@
             box-shadow: none !important;
             padding: 8px !important;
             border-right: 1px solid #1e2538 !important;
+            z-index: auto !important;
+        }
+        body.mode-pc .maint-group-title {
+            position: static !important;
+            z-index: auto !important;
         }
         body.mode-pc th:first-child, body.mode-pc td:first-child {
             border-right: 2px solid #1e2538 !important;
@@ -153,6 +177,9 @@
 </head>
 <body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
+    <!-- ===================================================
+       🔐 ログインビュー
+       =================================================== -->
     <div id="login-view" class="fixed inset-0 bg-bgDark z-[2000] flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <div class="text-center space-y-1">
@@ -178,6 +205,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       📁 番組・大会ファイル選択ビュー (初期画面)
+       =================================================== -->
     <div id="welcome-view" class="fixed inset-0 bg-bgDark z-[1500] flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
             <div class="flex justify-between items-center mb-6 shrink-0">
@@ -201,6 +231,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       ➕ 新規番組作成モーダル
+       =================================================== -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -223,6 +256,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       ✏ 番組設定編集モーダル
+       =================================================== -->
     <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -245,6 +281,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       👯 番組複製 (コピー) モーダル
+       =================================================== -->
     <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
@@ -267,6 +306,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       📱 共通アプリケーションヘッダー
+       =================================================== -->
     <div class="app-header px-4 pb-3 border-b border-borderStroke flex flex-row justify-between items-center shadow-lg">
         <div class="flex items-center gap-1.5 min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
@@ -279,7 +321,11 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       📊 ビュー1: ダッシュボード (メイン監視モニタ)
+       =================================================== -->
     <div id="view-dashboard" class="view-content active px-4 space-y-4 max-w-xl mx-auto transition-all">
+        <!-- クイックコントロールセンター -->
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
@@ -303,9 +349,11 @@
             <div id="dash-memo-status" class="text-xs font-bold text-accentGreen mt-1 empty:hidden"></div>
         </div>
 
+        <!-- 各種テーブル群 -->
         <div class="grid grid-cols-1 gap-6">
+            <!-- カテゴリ1: 本線系統 -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
-                <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
+                <h2 class="maint-group-title text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
                 </h2>
                 <table>
@@ -322,8 +370,9 @@
                 </table>
             </div>
 
+            <!-- カテゴリ2: リレー系統 -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
-                <h2 class="text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
+                <h2 class="maint-group-title text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-route"></i> 中継所リレーリンク
                 </h2>
                 <table>
@@ -340,8 +389,9 @@
                 </table>
             </div>
 
+            <!-- カテゴリ3: 予備・特設系統 -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
-                <h2 class="text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
+                <h2 class="maint-group-title text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
                 </h2>
                 <table>
@@ -360,6 +410,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       ✍ ビュー2: 現場データ入力・測定値送信画面
+       =================================================== -->
     <div id="view-input" class="view-content px-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
@@ -470,6 +523,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       🛠️ ビュー3: メンテナンス画面 (並び替え・受信点追加)
+       =================================================== -->
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             <div id="maint-admin-box" class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex items-center justify-between">
@@ -501,6 +557,7 @@
                 </div>
             </div>
 
+            <!-- ドラッグ＆ドロップ並び替え領域 -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-wider"><i class="fas fa-sort-amount-down text-accentBlue"></i> ドラッグ順序入れ替え</h2>
                 <div class="space-y-3">
@@ -514,6 +571,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       👥 ビュー4: ユーザーアカウント管理者画面
+       =================================================== -->
     <div id="view-useradmin" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
@@ -529,6 +589,9 @@
         </div>
     </div>
 
+    <!-- ===================================================
+       🗺️ 下部グローバルナビゲーションバー
+       =================================================== -->
     <div class="bottom-nav fixed bottom-0 left-0 w-full h-[75px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,4px)] pt-2 justify-between items-center shadow-2xl">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
             <span class="text-lg"><i class="fas fa-chart-bar"></i></span><span class="text-[10px] font-bold tracking-tight">ダッシュボード</span>
@@ -541,7 +604,10 @@
         </button>
     </div>
 
-    <script>
+    <!-- ===================================================
+       ⚙️ システムメインロジックスクリプト (JavaScript)
+       =================================================== -->
+<script>
     const SUPABASE_URL = "https://iyzadjupyejeyeeyvwqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5emFkanVweWVqZXllZXl2d3FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTE2NjgsImV4cCI6MjA5OTE2NzY2OH0.T6oXWP6s35wg77Nzuez7zrWVg49n6FFI0NzkW9z6QCQ";
     
