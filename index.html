@@ -52,11 +52,12 @@
             background-color: #1a2035 !important;
         }
 
-        /* 📱 iPhone・スマホ対応の横スクロール＆左端回線名固定CSS */
+        /* 📱 iPhone画面崩れを完全に防ぐ横スクロール＆左端固定CSS */
         .table-container {
             overflow-x: auto;
             position: relative;
             -webkit-overflow-scrolling: touch;
+            width: 100%;
         }
         table {
             width: 100%;
@@ -65,34 +66,35 @@
             table-layout: fixed;
         }
         
-        /* 1列目（対象回線名）の固定配置設定 */
+        /* 1列目（対象回線名）を綺麗に左端固定 */
         th:first-child, td:first-child {
             position: sticky;
             left: 0;
             background-color: #111625 !important;
             z-index: 10;
             border-right: 2px solid #1e2538;
-            width: 120px !important;
-            min-width: 120px !important;
-            max-width: 120px !important;
-            box-shadow: 4px 0 8px rgba(0, 0, 0, 0.4);
+            width: 105px !important;
+            min-width: 105px !important;
+            max-width: 105px !important;
+            box-shadow: 3px 0 6px rgba(0, 0, 0, 0.4);
+            word-wrap: break-word;
+            white-space: normal;
         }
         
-        /* ヘッダー最左のz-indexをさらに上に */
-        th:first-child {
-            z-index: 20;
-        }
+        th:first-child { z-index: 20; }
 
-        /* データ表示列（技術・走行・リハ・本番）の幅を均等に制限 */
+        /* データ表示列（技術・走行・リハ・本番）を潰さない適切なサイズに固定 */
         th:not(:first-child), td:not(:first-child) {
-            width: 145px !important;
-            min-width: 145px !important;
-            max-width: 145px !important;
+            width: 155px !important;
+            min-width: 155px !important;
+            max-width: 155px !important;
+            padding: 4px !important;
         }
     </style>
 </head>
 <body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden">
 
+    <!-- 🔐 ログイン画面 -->
     <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <div class="text-center space-y-1">
@@ -118,6 +120,7 @@
         </div>
     </div>
 
+    <!-- 📁 大会ファイル選択画面 -->
     <div id="welcome-view" class="fixed inset-0 bg-bgDark z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
             <div class="flex justify-between items-center mb-6 shrink-0">
@@ -141,6 +144,7 @@
         </div>
     </div>
 
+    <!-- ➕ 新規番組作成モーダル -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -163,6 +167,7 @@
         </div>
     </div>
 
+    <!-- 📝 番組設定編集モーダル -->
     <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -171,11 +176,11 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID / Program ID (半角英数字)</label>
-                    <input type="text" id="edit-program-id" placeholder="新しい番組IDを入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                    <input type="text" id="edit-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
                 </div>
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称</label>
-                    <input type="text" id="edit-program-title" placeholder="新しい番組名を入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                    <input type="text" id="edit-program-title" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
                 </div>
             </div>
             <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
@@ -185,6 +190,7 @@
         </div>
     </div>
 
+    <!-- 👯 番組ファイル複製モーダル -->
     <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
@@ -193,11 +199,11 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組ID (半角英数字)</label>
-                    <input type="text" id="dup-program-id" placeholder="例: ekiden-2026-day2" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                    <input type="text" id="dup-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
                 </div>
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組名・大会名称</label>
-                    <input type="text" id="dup-program-title" placeholder="例: 全日本大学駅伝2026(2日目)" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                    <input type="text" id="dup-program-title" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
                 </div>
             </div>
             <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
@@ -207,12 +213,11 @@
         </div>
     </div>
 
+    <!-- 🗺️ システム共通ヘッダー -->
     <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-5 py-4 border-b border-borderStroke flex justify-between items-center">
         <div class="flex items-center gap-2 max-w-[50%] min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
-            <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition" title="番組情報を編集">
-                <i class="fas fa-edit"></i>
-            </button>
+            <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition"><i class="fas fa-edit"></i></button>
         </div>
         <div class="flex items-center gap-2">
             <button onclick="location.reload()" class="text-[10px] bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition">大会変更</button>
@@ -220,6 +225,7 @@
         </div>
     </div>
 
+    <!-- 📊 VIEW 1: ダッシュボードモニター -->
     <div id="view-dashboard" class="view-content active p-4 space-y-4">
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
@@ -245,54 +251,57 @@
         </div>
 
         <div class="grid grid-cols-1 gap-6">
-            <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl table-container no-scrollbar">
-                <h2 class="text-base font-black text-accentBlue border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
+            <!-- 本線基幹ルート -->
+            <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
+                <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-[11px] text-slate-400 font-bold tracking-wider">
-                            <th class="text-left pb-2">対象回線</th>
-                            <th class="pb-2">技術</th>
-                            <th class="pb-2">走行</th>
-                            <th class="pb-2">リハ</th>
-                            <th class="pb-2 text-accentBlue font-black">本番</th>
+                        <tr class="text-[10px] text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
+                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5">技術</th>
+                            <th class="pb-1.5">走行</th>
+                            <th class="pb-1.5">リハ</th>
+                            <th class="pb-1.5 text-accentBlue">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-main" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
 
-            <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl table-container no-scrollbar">
-                <h2 class="text-base font-black text-accentOrange border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
+            <!-- 中継所リレーリンク -->
+            <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
+                <h2 class="text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-route"></i> 中継所リレーリンク
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-[11px] text-slate-400 font-bold tracking-wider">
-                            <th class="text-left pb-2">対象回線</th>
-                            <th class="pb-2">技術</th>
-                            <th class="pb-2">走行</th>
-                            <th class="pb-2">リハ</th>
-                            <th class="pb-2 text-accentOrange font-black">本番</th>
+                        <tr class="text-[10px] text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
+                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5">技術</th>
+                            <th class="pb-1.5">走行</th>
+                            <th class="pb-1.5">リハ</th>
+                            <th class="pb-1.5 text-accentOrange">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-relay" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
 
-            <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl table-container no-scrollbar">
-                <h2 class="text-base font-black text-slate-300 border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
+            <!-- 予備・特設・ヘリ系統 -->
+            <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
+                <h2 class="text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-[11px] text-slate-400 font-bold tracking-wider">
-                            <th class="text-left pb-2">対象回線</th>
-                            <th class="pb-2">技術</th>
-                            <th class="pb-2">走行</th>
-                            <th class="pb-2">リハ</th>
-                            <th class="pb-2 text-slate-300 font-black">本番</th>
+                        <tr class="text-[10px] text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
+                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5">技術</th>
+                            <th class="pb-1.5">走行</th>
+                            <th class="pb-1.5">リハ</th>
+                            <th class="pb-1.5 text-slate-300">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-sub" class="divide-y divide-borderStroke/30"></tbody>
@@ -301,6 +310,7 @@
         </div>
     </div>
 
+    <!-- ✍️ VIEW 2: 現場データ入力画面 -->
     <div id="view-input" class="view-content p-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
@@ -411,6 +421,7 @@
         </div>
     </div>
 
+    <!-- 🛠️ VIEW 3: メンテナンス -->
     <div id="view-maintenance" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
@@ -466,6 +477,7 @@
         </div>
     </div>
 
+    <!-- 👥 VIEW 4: ポジション別 アカウント権限管理画面 -->
     <div id="view-useradmin" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
@@ -474,15 +486,14 @@
                 </h2>
                 <button onclick="switchView('maintenance')" class="text-[10px] font-bold text-slate-400 border border-borderStroke px-2 py-1 rounded-md">戻る</button>
             </div>
-            
-            <p class="text-[10px] text-slate-400 font-bold leading-relaxed">登録されているポジション別アカウントのトグルスイッチを切り替えるだけで、即座に現場権限（ファイル削除や並べ替え可否）が反映されます。</p>
-            
+            <p class="text-[10px] text-slate-400 font-bold leading-relaxed">登録されているポジション別アカウントのトグルスイッチを切り替えるだけで、即座に現場権限が反映されます。</p>
             <div id="user-role-list-box" class="space-y-3 pt-2">
                 <div class="text-xs text-slate-500 font-mono text-center py-4">ユーザーアカウント一覧を読込中...</div>
             </div>
         </div>
     </div>
 
+    <!-- 🗺️ ボトムナビゲーション -->
     <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,0px)]">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
             <span class="text-base"><i class="fas fa-chart-bar"></i></span>
@@ -512,7 +523,6 @@
     
     let sortableInstances = { main: null, relay: null, sub: null };
 
-    // 起動時に認証セッション確認
     window.addEventListener('load', async () => {
         if (!sb) return;
         const { data: { session } } = await sb.auth.getSession();
@@ -556,15 +566,10 @@
         } else {
             try {
                 const { data, error } = await sb.from('user_roles').select('role').eq('id', userId).maybeSingle();
-                if(!error && data) {
-                    currentUserRole = data.role;
-                } else {
-                    currentUserRole = "staff";
-                }
+                if(!error && data) { currentUserRole = data.role; } else { currentUserRole = "staff"; }
             } catch(e) { currentUserRole = "staff"; }
         }
 
-        // UI表示の切り替え
         const badge = document.getElementById('user-role-badge');
         if(currentUserRole === 'admin') {
             if(badge) {
@@ -587,7 +592,7 @@
     }
 
     /* ===================================================
-       👥 管理者専用：全ユーザーアカウントの権限変更ロジック
+       👥 管理者専用：全ユーザーアカウントの権限管理
        =================================================== */
     async function loadUserRolesList() {
         if (!sb || currentUserRole !== 'admin') return;
@@ -604,7 +609,7 @@
                     return `
                         <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex justify-between items-center">
                             <div class="truncate pr-2 text-left">
-                                <div class="text-xs font-bold text-slate-200 truncate font-sans font-mono">${u.email}</div>
+                                <div class="text-xs font-bold text-slate-200 truncate font-mono">${u.email}</div>
                                 <div class="text-[9px] font-mono mt-0.5 text-slate-500">UID: ${u.id.substring(0,8)}...</div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -614,15 +619,10 @@
                                     <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-checked:after:bg-bgDark"></div>
                                 </label>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
-            } else {
-                box.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-4">ユーザーがいません</div>';
-            }
-        } catch(e) {
-            box.innerHTML = `<div class="text-xs text-rose-400 font-bold text-center py-4">読み込みエラー: ${e.message}</div>`;
-        }
+            } else { box.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-4">ユーザーがいません</div>'; }
+        } catch(e) { box.innerHTML = `<div class="text-xs text-rose-400 font-bold text-center py-4">読み込みエラー: ${e.message}</div>`; }
     }
 
     async function toggleUserRole(targetUid, isChecked) {
@@ -632,10 +632,7 @@
             const { error } = await sb.from('user_roles').update({ role: targetRole }).eq('id', targetUid);
             if (error) throw error;
             loadUserRolesList();
-        } catch(e) {
-            alert("権限の変更に失敗しました: " + e.message);
-            loadUserRolesList();
-        }
+        } catch(e) { alert("権限の変更に失敗しました: " + e.message); loadUserRolesList(); }
     }
 
     /* ===================================================
@@ -654,9 +651,9 @@
                     let actionButtons = "";
                     if (currentUserRole === 'admin') {
                         actionButtons = `
-                            <button onclick="openDuplicateModal('${p.id}', '${p.title}')" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="このファイルを複製"><i class="fas fa-copy"></i></button>
-                            <button onclick="openEditProgramModalFromList('${p.id}', '${p.title}')" class="text-slate-400 hover:text-accentBlue text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="この設定を編集"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteProgramEntirely('${p.id}', '${p.title}')" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="この大会ファイルを完全に削除"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="openDuplicateModal('${p.id}', '${p.title}')" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition"><i class="fas fa-copy"></i></button>
+                            <button onclick="openEditProgramModalFromList('${p.id}', '${p.title}')" class="text-slate-400 hover:text-accentBlue text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteProgramEntirely('${p.id}', '${p.title}')" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition"><i class="fas fa-trash-alt"></i></button>
                         `;
                     }
                     return `
@@ -669,8 +666,7 @@
                                 ${actionButtons}
                                 <button onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="text-[10px] font-bold bg-slate-800 text-amber-400 px-3 py-2 rounded-md border border-slate-700 hover:border-amber-400 transition">接続</button>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
             } else { listBox.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-6">ファイルがありません。</div>'; }
         } catch (err) { statusEl.innerText = `⚠️ 接続失敗: ${err.message}`; }
@@ -709,8 +705,6 @@
     }
     function closeEditProgramModal() {
         document.getElementById('edit-program-modal').classList.replace('flex', 'hidden');
-        document.getElementById('edit-program-id').value = '';
-        document.getElementById('edit-program-title').value = '';
         editingTargetId = "";
     }
 
@@ -747,7 +741,7 @@
         document.getElementById('duplicate-program-modal').classList.replace('hidden', 'flex');
     }
     function closeDuplicateModal() {
-        document.getElementById('duplicate-program-modal').classList.replace('hidden', 'flex');
+        document.getElementById('duplicate-program-modal').classList.replace('flex', 'hidden');
         duplicateSourceId = "";
     }
     async function submitDuplicateProgram() {
@@ -811,7 +805,7 @@
     }
 
     /* ===================================================
-       【画面1】ダッシュボード表示ロジック
+       【画面1】ダッシュボード表示・描画ロジック（重なり解消版）
        =================================================== */
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
@@ -875,6 +869,7 @@
         }
     }
 
+    // 🌟【最重要修正】要素の重なりを完璧に排除したセルレンダラー
     function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, txModel, rxModel, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
@@ -886,40 +881,39 @@
         if (value < 35) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
         else if (value < 50) { statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; }
 
-        let chDisplayHtml = "";
-        if (fpuChannel) {
-            chDisplayHtml = `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-[10px] font-black px-1 py-0.5 rounded font-mono uppercase tracking-normal mr-1 shrink-0">${fpuChannel}</span>`;
-        }
+        let chDisplayHtml = fpuChannel ? `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded font-mono uppercase tracking-normal">${fpuChannel}</span>` : `<span class="text-slate-600 text-[10px] font-bold">no ch</span>`;
 
         let memoHtml = "";
-        if (fMemo) memoHtml += `<div class="text-[10px] text-emerald-400 font-bold truncate leading-tight">現:${fMemo}</div>`;
-        if (cMemo) memoHtml += `<div class="text-[10px] text-accentBlue font-bold truncate leading-tight">セ:${cMemo}</div>`;
+        if (fMemo) memoHtml += `<div class="text-[10px] text-emerald-400 font-bold truncate leading-tight mt-0.5">現:${fMemo}</div>`;
+        if (cMemo) memoHtml += `<div class="text-[10px] text-accentBlue font-bold truncate leading-tight mt-0.5">セ:${cMemo}</div>`;
 
+        // パラメータ類を重なりを回避し縦並びでスマートに描画
         let specsHtml = `
-            <div class="flex flex-col gap-0.5 text-[11px] text-slate-200 border-l-2 border-slate-700/80 pl-2 ml-1.5 font-mono font-black text-left shrink-0 bg-slate-950/40 p-1 rounded-r-lg min-w-[120px]">
-                <div class="truncate flex items-center justify-between"><span class="text-pink-400 text-[10px] font-sans mr-1">変調:</span>${modType || '--'}</div>
-                <div class="truncate flex items-center justify-between"><span class="text-amber-400 text-[10px] font-sans mr-1">ＰＳ:</span>${presetType || '--'}</div>
-                <div class="truncate flex items-center justify-between"><span class="text-sky-400 text-[10px] font-sans mr-1">ＴＳ:</span>${tsRate ? tsRate.replace('Mbps','') : '--'}</div>
-                <div class="truncate flex items-center justify-between border-t border-slate-800/60 mt-0.5 pt-0.5"><span class="text-slate-400 text-[10px] font-sans mr-1">ＴＸ:</span>${txModel || '--'}</div>
-                <div class="truncate flex items-center justify-between"><span class="text-slate-400 text-[10px] font-sans mr-1">ＲＸ:</span>${rxModel || '--'}</div>
+            <div class="flex flex-col gap-0.5 text-[9px] text-slate-300 font-mono font-black text-left w-full bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/60 mt-1.5">
+                <div class="truncate flex items-center justify-between"><span class="text-pink-400 font-sans font-bold">変調:</span>${modType || '--'}</div>
+                <div class="truncate flex items-center justify-between"><span class="text-amber-400 font-sans font-bold">ＰＳ:</span>${presetType || '--'}</div>
+                <div class="truncate flex items-center justify-between"><span class="text-sky-400 font-sans font-bold">ＴＳ:</span>${tsRate ? tsRate.replace('Mbps','') : '--'}</div>
+                <div class="truncate flex items-center justify-between border-t border-slate-800/80 mt-1 pt-1"><span class="text-slate-400 font-sans font-bold">ＴＸ:</span>${txModel || '--'}</div>
+                <div class="truncate flex items-center justify-between"><span class="text-slate-400 font-sans font-bold">ＲＸ:</span>${rxModel || '--'}</div>
             </div>
         `;
 
         cell.innerHTML = `
-            <div class="cell-box ${bgStyle} border rounded-xl p-1.5 min-h-[85px] flex flex-col justify-between transition-all shadow-sm">
-                <div class="w-full flex-1 flex items-center justify-center py-0.5">
-                    <div class="flex items-center justify-between w-full px-0.5">
-                        <div class="flex flex-col items-center justify-center flex-1 min-w-0">
-                            ${chDisplayHtml}
-                            <div class="${statusColor} text-xl font-mono font-black tracking-tighter flex items-baseline justify-center mt-0.5">
-                                ${value}<span class="text-[9px] font-sans font-black ml-0.5 opacity-80">dB</span>
-                            </div>
+            <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[90px] flex flex-col justify-between transition-all shadow-sm">
+                <div class="w-full">
+                    <!-- 上段：チャンネル＆電界数値を横並びにして視認性アップ -->
+                    <div class="flex items-center justify-between px-0.5 w-full">
+                        ${chDisplayHtml}
+                        <div class="${statusColor} text-xl font-mono font-black tracking-tighter flex items-baseline">
+                            ${value}<span class="text-[9px] font-sans font-black ml-0.5 opacity-80">dB</span>
                         </div>
-                        ${specsHtml}
                     </div>
+                    <!-- 中段：機材パラメータ情報 -->
+                    ${specsHtml}
                 </div>
-                <div class="space-y-0.5 text-left w-full border-t border-slate-800/20 pt-1 mt-auto">
-                    ${memoHtml || '<div class="text-[10px] text-slate-600 italic text-center">--</div>'}
+                <!-- 下段：各種現場メモエリア -->
+                <div class="w-full border-t border-slate-800/40 pt-1 mt-1.5">
+                    ${memoHtml || '<div class="text-[9px] text-slate-600 italic text-center">--</div>'}
                 </div>
             </div>`;
 
