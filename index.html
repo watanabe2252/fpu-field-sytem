@@ -89,7 +89,7 @@
             padding: 4px !important;
         }
 
-        /* 💻 【PCモード】幅バラバラ問題を解消するスタイル定義 */
+        /* 💻 【PCモード】幅等幅スタイル定義 */
         body.mode-pc .max-w-xl {
             max-w-full !important;
             max-width: 98% !important;
@@ -98,7 +98,7 @@
             overflow-x: visible !important;
         }
         body.mode-pc table {
-            table-layout: fixed !important; /* 自動計算を排除し固定幅に強制 */
+            table-layout: fixed !important;
             width: 100% !important;
         }
         body.mode-pc th, body.mode-pc td {
@@ -107,14 +107,12 @@
             padding: 6px !important;
             border-right: 1px solid #1e2538 !important;
         }
-        /* 回線名カラムをPCでは240pxに固定 */
         body.mode-pc th:first-child, body.mode-pc td:first-child {
             border-right: 2px solid #1e2538 !important;
             width: 240px !important;
             min-width: 240px !important;
             max-width: 240px !important;
         }
-        /* 技術・走行・リハ・本番のカラム幅を完全均等(等幅)に分配 */
         body.mode-pc th:not(:first-child), body.mode-pc td:not(:first-child) {
             width: calc((100% - 240px) / 4) !important;
             min-width: 160px !important;
@@ -693,6 +691,7 @@
         if (cell) cell.innerHTML = `<div class="bg-slate-900/40 rounded-xl p-2 min-h-[85px] flex justify-center items-center"><div class="text-sm font-bold text-slate-600">--</div></div>`;
     }
 
+    // 🛠️ 送受信機（TX/RX）の表示欄を復活＆最適化
     function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, txModel, rxModel, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
@@ -708,16 +707,25 @@
         if (fMemo) memoHtml += `<div class="text-[10px] text-emerald-400 font-bold truncate mt-0.5">現:${fMemo}</div>`;
         if (cMemo) memoHtml += `<div class="text-[10px] text-accentBlue font-bold truncate mt-0.5">セ:${cMemo}</div>`;
 
+        // TX/RXのスペック表示エリアのHTMLを再構成
+        let specsHtml = `
+            <div class="flex flex-col gap-0.5 text-[9px] text-slate-300 font-mono text-left w-full bg-slate-950/50 p-1 rounded mt-1 border border-slate-800">
+                <div class="truncate">変:${modType || '--'}</div>
+                <div class="truncate">Ｐ:${presetType || '--'}</div>
+                <div class="truncate">Ｔ:${tsRate || '--'}</div>
+                <div class="truncate border-t border-slate-800 mt-0.5 pt-0.5 text-slate-400">TX:${txModel || '--'}</div>
+                <div class="truncate text-slate-400">RX:${rxModel || '--'}</div>
+            </div>
+        `;
+
         cell.innerHTML = `
-            <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[90px] flex flex-col justify-between shadow-sm transition-all">
+            <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[110px] flex flex-col justify-between shadow-sm transition-all">
                 <div>
                     <div class="flex items-center justify-between w-full">
                         ${chHtml}
                         <div class="${statusColor} text-xl font-mono font-black">${value}<span class="text-[9px] font-sans ml-0.5">dB</span></div>
                     </div>
-                    <div class="flex flex-col gap-0.5 text-[9px] text-slate-300 font-mono text-left w-full bg-slate-950/50 p-1 rounded mt-1 border border-slate-800">
-                        <div class="truncate">変:${modType || '--'}</div><div class="truncate">Ｐ:${presetType || '--'}</div><div class="truncate">Ｔ:${tsRate || '--'}</div>
-                    </div>
+                    ${specsHtml}
                 </div>
                 <div class="w-full border-t border-slate-800/40 mt-1 pt-1">${memoHtml || '<div class="text-[9px] text-slate-600 italic text-center">--</div>'}</div>
             </div>`;
@@ -787,6 +795,11 @@
             document.getElementById('input-field-memo').value = "";
             document.getElementById('input-center-memo').value = "";
             document.getElementById('channel-custom-input').value = "";
+            document.getElementById('input-mod-type').value = "";
+            document.getElementById('input-preset-type').value = "";
+            document.getElementById('input-ts-rate').value = "";
+            document.getElementById('input-tx-model').value = "";
+            document.getElementById('input-rx-model').value = "";
         }
         document.getElementById('db-value').innerText = currentVal;
     }
@@ -845,7 +858,9 @@
             fpu_channel: fpuCh ? fpuCh : (currentRec ? currentRec.fpu_channel : ""),
             mod_type: currentRec ? currentRec.mod_type : "",
             preset_type: currentRec ? currentRec.preset_type : "",
-            ts_rate: currentRec ? currentRec.ts_rate : ""
+            ts_rate: currentRec ? currentRec.ts_rate : "",
+            tx_model: currentRec ? currentRec.tx_model : "",
+            rx_model: currentRec ? currentRec.rx_model : ""
         }, { onConflict: 'program_id,link_id,phase' });
 
         document.getElementById('dash-center-memo').value = "";
