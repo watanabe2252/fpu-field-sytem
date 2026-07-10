@@ -83,7 +83,7 @@
         
         th:first-child { z-index: 20; }
 
-        /* データ表示列（技術・走行・リハ・本番）を潰さない適切なサイズに固定 */
+        /* データ表示列（技術・走行・リハ・本番）を潰さないサイズ */
         th:not(:first-child), td:not(:first-child) {
             width: 155px !important;
             min-width: 155px !important;
@@ -741,7 +741,7 @@
         document.getElementById('duplicate-program-modal').classList.replace('hidden', 'flex');
     }
     function closeDuplicateModal() {
-        document.getElementById('duplicate-program-modal').classList.replace('flex', 'hidden');
+        document.getElementById('duplicate-program-modal').classList.replace('hidden', 'flex');
         duplicateSourceId = "";
     }
     async function submitDuplicateProgram() {
@@ -783,29 +783,8 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
-    function switchView(viewName) {
-        if(viewName === 'useradmin' && currentUserRole !== 'admin') return;
-
-        ['dashboard', 'input', 'maintenance', 'useradmin'].forEach(v => {
-            const btn = document.getElementById(`nav-${v}`);
-            const content = document.getElementById(`view-${v}`);
-            if (v === viewName) { 
-                if(btn && btn.classList.contains('text-slate-500')) btn.classList.replace('text-slate-500', 'text-accentBlue'); 
-                if(content) content.classList.add('active'); 
-            } else { 
-                if(btn && btn.classList.contains('text-accentBlue')) btn.classList.replace('text-accentBlue', 'text-slate-500'); 
-                if(content) content.classList.remove('active'); 
-            }
-        });
-        if (viewName === 'dashboard') { initDashboard(); loadDashboardLinkSelect(); } 
-        else if (viewName === 'input') { loadInputViewSequence(); } 
-        else if (viewName === 'maintenance') { loadRegisteredLinks(); }
-        else if (viewName === 'useradmin') { loadUserRolesList(); }
-        window.scrollTo(0,0);
-    }
-
     /* ===================================================
-       【画面1】ダッシュボード表示・描画ロジック（重なり解消版）
+       【画面1】ダッシュボード表示・描画ロジック
        =================================================== */
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
@@ -869,7 +848,6 @@
         }
     }
 
-    // 🌟【最重要修正】要素の重なりを完璧に排除したセルレンダラー
     function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, txModel, rxModel, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
@@ -887,7 +865,6 @@
         if (fMemo) memoHtml += `<div class="text-[10px] text-emerald-400 font-bold truncate leading-tight mt-0.5">現:${fMemo}</div>`;
         if (cMemo) memoHtml += `<div class="text-[10px] text-accentBlue font-bold truncate leading-tight mt-0.5">セ:${cMemo}</div>`;
 
-        // パラメータ類を重なりを回避し縦並びでスマートに描画
         let specsHtml = `
             <div class="flex flex-col gap-0.5 text-[9px] text-slate-300 font-mono font-black text-left w-full bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/60 mt-1.5">
                 <div class="truncate flex items-center justify-between"><span class="text-pink-400 font-sans font-bold">変調:</span>${modType || '--'}</div>
@@ -901,17 +878,14 @@
         cell.innerHTML = `
             <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[90px] flex flex-col justify-between transition-all shadow-sm">
                 <div class="w-full">
-                    <!-- 上段：チャンネル＆電界数値を横並びにして視認性アップ -->
                     <div class="flex items-center justify-between px-0.5 w-full">
                         ${chDisplayHtml}
                         <div class="${statusColor} text-xl font-mono font-black tracking-tighter flex items-baseline">
                             ${value}<span class="text-[9px] font-sans font-black ml-0.5 opacity-80">dB</span>
                         </div>
                     </div>
-                    <!-- 中段：機材パラメータ情報 -->
                     ${specsHtml}
                 </div>
-                <!-- 下段：各種現場メモエリア -->
                 <div class="w-full border-t border-slate-800/40 pt-1 mt-1.5">
                     ${memoHtml || '<div class="text-[9px] text-slate-600 italic text-center">--</div>'}
                 </div>
