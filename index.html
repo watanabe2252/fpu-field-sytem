@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- 📦 外部ライブラリ CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -34,26 +33,17 @@
     
     <style>
         *, *::before, *::after {
-            box-sizing: border-box;
+            box-sizing: border-box; /* 要素のサイズ計算を安全に固定化 */
         }
         body {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 95px); /* 下部ナビが切れるのを防ぐ十分な余白 */
             min-height: 100dvh;
-            margin: 0;
-            padding: 0;
-            background-color: #070a13;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 🚨 上下固定バーに絶対に侵食されないための独立コンテンツエリア */
-        .view-content {
-            display: none;
-            padding-top: calc(130px + env(safe-area-inset-top, 0px)) !important;
-            padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
-            height: 100vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+        .view-content { display: none; }
         .view-content.active { display: block; }
 
         .sortable-ghost {
@@ -133,11 +123,8 @@
         }
     </style>
 </head>
-<body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
+<body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
-    <!-- ===================================================
-       🔐 ログインビュー
-       =================================================== -->
     <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <div class="text-center space-y-1">
@@ -163,9 +150,6 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       📁 番組・大会ファイル選択ビュー (初期画面)
-       =================================================== -->
     <div id="welcome-view" class="fixed inset-0 bg-bgDark z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
             <div class="flex justify-between items-center mb-6 shrink-0">
@@ -189,9 +173,6 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       ➕ 新規番組作成モーダル
-       =================================================== -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -214,9 +195,6 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       ✏ 番組設定編集モーダル
-       =================================================== -->
     <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -239,9 +217,6 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       👯 番組複製 (コピー) モーダル
-       =================================================== -->
     <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
@@ -264,10 +239,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       📱 共通アプリケーションヘッダー（fixed top-0 固定）
-       =================================================== -->
-    <div class="app-header fixed top-0 left-0 w-full z-30 bg-cardBg/95 backdrop-blur-md px-4 py-3 border-b border-borderStroke flex flex-col gap-2.5 sm:flex-row sm:justify-between sm:items-center shadow-lg">
+    <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-4 pt-4 pb-4 border-b border-borderStroke flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
         <div class="flex items-center justify-between w-full sm:w-auto">
             <div class="flex items-center gap-2 min-w-0">
                 <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
@@ -276,7 +248,7 @@
             <div id="user-role-badge" class="text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke sm:ml-2">STAFF</div>
         </div>
         
-        <div class="flex items-center justify-between w-full sm:w-auto gap-2 border-t border-borderStroke/30 pt-1.5 sm:border-none sm:pt-0 shrink-0">
+        <div class="flex items-center justify-between w-full sm:w-auto gap-2 border-t border-borderStroke/30 pt-2 sm:border-none sm:pt-0 shrink-0">
             <div class="flex bg-bgDark border border-borderStroke p-0.5 rounded-lg text-xs font-bold w-1/2 sm:w-auto justify-center">
                 <button id="btn-mode-mobile" onclick="toggleDisplayMode('mobile')" class="flex-1 sm:flex-none px-3 py-1 rounded bg-accentBlue text-bgDark transition-all"><i class="fas fa-mobile-alt mr-1"></i>スマホ</button>
                 <button id="btn-mode-pc" onclick="toggleDisplayMode('pc')" class="flex-1 sm:flex-none px-3 py-1 rounded text-slate-400 hover:text-slate-200 transition-all"><i class="fas fa-desktop mr-1"></i>PC</button>
@@ -285,11 +257,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       📊 ビュー1: ダッシュボード (メイン監視モニタ)
-       =================================================== -->
-    <div id="view-dashboard" class="view-content active px-4 space-y-4 max-w-xl mx-auto transition-all">
-        <!-- クイックコントロールセンター -->
+    <div id="view-dashboard" class="view-content active px-4 pt-4 pb-6 space-y-4 max-w-xl mx-auto transition-all">
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
@@ -313,9 +281,7 @@
             <div id="dash-memo-status" class="text-xs font-bold text-accentGreen mt-1 empty:hidden"></div>
         </div>
 
-        <!-- 各種テーブル群 -->
         <div class="grid grid-cols-1 gap-6">
-            <!-- カテゴリ1: 本線系統 -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
                 <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
@@ -334,7 +300,6 @@
                 </table>
             </div>
 
-            <!-- カテゴリ2: リレー系統 -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
                 <h2 class="text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-route"></i> 中継所リレーリンク
@@ -353,7 +318,6 @@
                 </table>
             </div>
 
-            <!-- カテゴリ3: 予備・特設系統 -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-3 shadow-xl table-container no-scrollbar">
                 <h2 class="text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
@@ -374,10 +338,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       ✍ ビュー2: 現場データ入力・測定値送信画面
-       =================================================== -->
-    <div id="view-input" class="view-content px-4 space-y-6">
+    <div id="view-input" class="view-content px-4 pt-4 pb-6 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
                 <i class="fas fa-edit"></i> 電界データ＆Ch入力
@@ -478,10 +439,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       🛠️ ビュー3: メンテナンス画面 (並び替え・受信点追加)
-       =================================================== -->
-    <div id="view-maintenance" class="view-content px-4 space-y-6">
+    <div id="view-maintenance" class="view-content px-4 pt-4 pb-6 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex items-center justify-between">
                 <div>
@@ -512,7 +470,6 @@
                 </div>
             </div>
 
-            <!-- ドラッグ＆ドロップ並び替え領域 -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-wider"><i class="fas fa-sort-amount-down text-accentBlue"></i> ドラッグ順序入れ替え</h2>
                 <div class="space-y-3">
@@ -526,10 +483,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       👥 ビュー4: ユーザーアカウント管理者画面 (特権用)
-       =================================================== -->
-    <div id="view-useradmin" class="view-content px-4 space-y-6">
+    <div id="view-useradmin" class="view-content px-4 pt-4 pb-6 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
                 <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
@@ -541,10 +495,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       🗺️ 下部グローバルナビゲーションバー（fixed bottom-0 完全固定）
-       =================================================== -->
-    <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,0px)] shadow-2xl">
+    <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,0px)]">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
             <span class="text-base"><i class="fas fa-chart-bar"></i></span><span class="text-[10px] font-bold">ダッシュボード</span>
         </button>
@@ -556,10 +507,7 @@
         </button>
     </div>
 
-    <!-- ===================================================
-       ⚙️ システムメインロジックスクリプト (JavaScript)
-       =================================================== -->
-<script>
+    <script>
     const SUPABASE_URL = "https://iyzadjupyejeyeeyvwqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5emFkanVweWVqZXllZXl2d3FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTE2NjgsImV4cCI6MjA5OTE2NzY2OH0.T6oXWP6s35wg77Nzuez7zrWVg49n6FFI0NzkW9z6QCQ";
     
@@ -1068,9 +1016,6 @@
             if (viewName === 'dashboard') initDashboard();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
-            
-            // ビュー切り替え時にトップへスクロールを強制
-            targetView.scrollTop = 0;
         }
     }
 </script>
