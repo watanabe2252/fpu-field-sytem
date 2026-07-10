@@ -459,7 +459,7 @@
 
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
-            <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex items-center justify-between">
+            <div id="maint-admin-box" class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex items-center justify-between">
                 <div>
                     <h3 class="text-xs font-black text-amber-400 uppercase tracking-wider"><i class="fas fa-users-cog mr-1"></i> ポジション別 アカウント権限管理</h3>
                     <p class="text-xs text-slate-400 font-bold mt-0.5">アプリ内での動的権限昇格・降格画面へ遷移します。</p>
@@ -509,7 +509,9 @@
                 </h2>
                 <button onclick="switchView('maintenance')" class="text-xs font-bold text-slate-400 border border-borderStroke px-2 py-1 rounded-md">戻る</button>
             </div>
-            <div id="user-role-list-box" class="space-y-3"></div>
+            <div id="user-role-list-box" class="space-y-3 min-h-[100px]">
+                <div class="text-center text-xs text-slate-500 py-4">ユーザー一覧を読込中...</div>
+            </div>
         </div>
     </div>
 
@@ -605,17 +607,21 @@
         }
 
         const badge = document.getElementById('user-role-badge');
+        const maintAdminBox = document.getElementById('maint-admin-box');
+        
         if(currentUserRole === 'admin') {
             if(badge) {
                 badge.innerText = "ADMINISTRATOR";
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-500/30";
             }
             if(document.getElementById('btn-welcome-create')) document.getElementById('btn-welcome-create').classList.remove('hidden');
+            if(maintAdminBox) maintAdminBox.classList.remove('hidden');
         } else {
             if(badge) {
                 badge.innerText = "FIELD STAFF";
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke";
             }
+            if(maintAdminBox) maintAdminBox.classList.add('hidden'); // 一般スタッフには見せない
         }
         document.getElementById('login-view').classList.replace('flex', 'hidden');
         fetchProgramsList();
@@ -828,7 +834,6 @@
         document.getElementById('db-value').innerText = currentVal;
     }
 
-    // 🛠️ 【機能改修】一括書き込みロジックを統合
     async function submitToSupabase() {
         const linkId = document.getElementById('link-select').value;
         const currentPhase = document.getElementById('phase-select').value;
@@ -851,16 +856,10 @@
         let promises = [];
 
         if (batchAll) {
-            // 全日程（tech, run, rehe, prod）に対して個別にupsertを実行
             const allPhases = ['tech', 'run', 'rehe', 'prod'];
-            
             for (const phase of allPhases) {
-                // すでにクラウド上にレコードがある場合、その電界強度数値を保持するため一旦取得を試みる
                 const { data: ext } = await sb.from('records').select('value').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
-                
-                // 選択中のカレントフェーズであれば画面の値を使い、それ以外なら既存データか初期値(60)を使う
                 let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (ext ? ext.value : 60);
-                
                 promises.push(sb.from('records').upsert({
                     ...baseRecord,
                     phase: phase,
@@ -868,7 +867,6 @@
                 }, { onConflict: 'program_id,link_id,phase' }));
             }
         } else {
-            // 単発書き込み
             promises.push(sb.from('records').upsert({
                 ...baseRecord,
                 phase: currentPhase,
@@ -886,7 +884,60 @@
         } else {
             const msg = document.getElementById('status-msg');
             msg.innerText = "❌ エラーが発生しました";
-            msg.className = "text-center text-xs font-bold text-rose-400 pt-1";
+        }
+    }
+
+    // 🛠️ 【バグ修正ロジック】アカウント権限リストをSupabaseから引いて画面を動的生成する仕組み
+    async function loadUserRoleList() {
+        if (!sb || currentUserRole !== 'admin') return;
+        const box = document.getElementById('user-role-list-box');
+        box.innerHTML = '<div class="text-center text-xs text-slate-500 py-4">クラウド同期中...</div>';
+
+        const { data, error } = await sb.from('user_roles').select('*').order('email', { ascending: true });
+        if (error || !data) {
+            box.innerHTML = '<div class="text-center text-xs text-rose-400 py-4">読み込みエラー</div>';
+            return;
+        }
+
+        box.innerHTML = data.map(u => {
+            const isAdmin = u.role === 'admin';
+            return `
+                <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-black text-slate-200 truncate">${u.email}</div>
+                        <div class="text-[10px] font-mono text-slate-500 truncate">ID: ${u.id}</div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isAdmin ? 'bg-amber-950 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400'}">
+                            ${isAdmin ? '管理者' : '現場スタッフ'}
+                        </span>
+                        <button onclick="toggleUserRole('${u.id}', '${u.role}')" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-bold text-accentBlue transition-all">
+                            権限切替
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 🛠️ 【バグ修正ロジック】動的な権限トグルアップデート
+    async function toggleUserRole(userId, currentRole) {
+        if (!sb) return;
+        const nextRole = (currentRole === 'admin') ? 'staff' : 'admin';
+        
+        // 特権管理者自身のメールを保護するために、意図しないセルフ降格の確認メッセージを挟む
+        if (userId === (await sb.auth.getSession()).data.session?.user.id && nextRole === 'staff') {
+            if (!confirm("あなた自身の管理者権限を解除しますか？（解除するとこの画面に入れなくなります）")) return;
+        }
+
+        const { error } = await sb.from('user_roles').update({ role: nextRole }).eq('id', userId);
+        if (!error) {
+            // もし自分自身の権限を切り替えた場合は、グローバルバッジなどのUIを即時再同期する
+            const mySession = await sb.auth.getSession();
+            if (userId === mySession.data.session?.user.id) {
+                await syncUserRoleAndInit(userId, mySession.data.session?.user.email);
+            }
+            await loadUserRoleList(); // 一覧再読み込み
         }
     }
 
@@ -1000,7 +1051,6 @@
         localStorage.setItem(`fpu_saved_link_${activeProgramId}`, document.getElementById('link-select').value);
     }
 
-    UX=true;
     function openCreateModal() { document.getElementById('create-modal').classList.replace('hidden', 'flex'); }
     function closeCreateModal() { document.getElementById('create-modal').classList.replace('flex', 'hidden'); }
     function openEditProgramModalFromHeader() {
@@ -1052,6 +1102,7 @@
         fetchProgramsList();
     }
 
+    // 🛠️ 【機能修正】画面切替時の読み込みロジックを修正
     function switchView(viewName) {
         document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
         
@@ -1070,6 +1121,9 @@
             if (viewName === 'dashboard') initDashboard();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
+            
+            // 🚨 修正：特権ユーザー管理画面が開いた際にデータをロードするトリガーを追加
+            if (viewName === 'useradmin') loadUserRoleList();
             
             targetView.scrollTop = 0;
         }
