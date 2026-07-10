@@ -52,7 +52,7 @@
             background-color: #1a2035 !important;
         }
 
-        /* 📱 元のデザインの横スクロール＆左端固定CSS */
+        /* 📱 スマホモード・PCモード共通スタイル */
         .table-container {
             overflow-x: auto;
             position: relative;
@@ -65,9 +65,10 @@
             border-spacing: 0;
             table-layout: fixed;
         }
-        
-        /* 1列目（対象回線名）を綺麗に左端固定 */
-        th:first-child, td:first-child {
+
+        /* 📱 【スマホモード】スタイル定義 */
+        body.mode-mobile th:first-child, 
+        body.mode-mobile td:first-child {
             position: sticky;
             left: 0;
             background-color: #111625 !important;
@@ -80,19 +81,43 @@
             word-wrap: break-word;
             white-space: normal;
         }
-        
-        th:first-child { z-index: 20; }
-
-        /* データ表示列（技術・走行・リハ・本番） */
-        th:not(:first-child), td:not(:first-child) {
+        body.mode-mobile th:first-child { z-index: 20; }
+        body.mode-mobile th:not(:first-child), 
+        body.mode-mobile td:not(:first-child) {
             width: 155px !important;
             min-width: 155px !important;
             max-width: 155px !important;
             padding: 4px !important;
         }
+
+        /* 💻 【PCモード】スタイル定義（横幅いっぱいに等分、スクロール解除） */
+        body.mode-pc .max-w-xl {
+            max-w-full !important;
+            max-width: 95% !important;
+        }
+        body.mode-pc .table-container {
+            overflow-x: visible !important;
+        }
+        body.mode-pc table {
+            table-layout: auto !important;
+        }
+        body.mode-pc th, body.mode-pc td {
+            position: static !important;
+            box-shadow: none !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            padding: 8px !important;
+            border-right: 1px solid #1e2538 !important;
+        }
+        body.mode-pc th:first-child, body.mode-pc td:first-child {
+            border-right: 2px solid #1e2538 !important;
+            width: 180px !important;
+            min-width: 180px !important;
+        }
     </style>
 </head>
-<body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden">
+<body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
     <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
@@ -208,18 +233,24 @@
         </div>
     </div>
 
+    <!-- 📱 ヘッダー：PC/スマホ表示切り替えボタンを追加 -->
     <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-5 py-4 border-b border-borderStroke flex justify-between items-center">
-        <div class="flex items-center gap-2 max-w-[50%] min-w-0">
+        <div class="flex items-center gap-3 max-w-[50%] min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
             <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition"><i class="fas fa-edit"></i></button>
         </div>
         <div class="flex items-center gap-2">
+            <!-- 💻/📱 画面モード切り替え選択スイッチ -->
+            <div class="flex bg-bgDark border border-borderStroke p-0.5 rounded-lg text-[10px] font-bold">
+                <button id="btn-mode-mobile" onclick="toggleDisplayMode('mobile')" class="px-2 py-1 rounded bg-accentBlue text-bgDark transition-all"><i class="fas fa-mobile-alt mr-1"></i>スマホ</button>
+                <button id="btn-mode-pc" onclick="toggleDisplayMode('pc')" class="px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition-all"><i class="fas fa-desktop mr-1"></i>PC</button>
+            </div>
             <button onclick="location.reload()" class="text-[10px] bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition">大会変更</button>
             <div id="user-role-badge" class="text-[9px] font-mono font-black px-2 py-1 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
         </div>
     </div>
 
-    <div id="view-dashboard" class="view-content active p-4 space-y-4">
+    <div id="view-dashboard" class="view-content active p-4 space-y-4 max-w-xl mx-auto transition-all">
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
@@ -510,6 +541,10 @@
     let sortableInstances = { main: null, relay: null, sub: null };
 
     window.addEventListener('load', async () => {
+        // 初回ロード時にデバイス判定してデフォルトモードを設定
+        const isDesktop = window.innerWidth >= 1024;
+        toggleDisplayMode(isDesktop ? 'pc' : 'mobile');
+
         if (!sb) return;
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
@@ -518,6 +553,34 @@
             document.getElementById('login-view').classList.replace('hidden', 'flex');
         }
     });
+
+    /* ===================================================
+       💻 / 📱 表示モード動的切り替え制御ロジック
+       =================================================== */
+    function toggleDisplayMode(mode) {
+        const body = document.body;
+        const btnMobile = document.getElementById('btn-mode-mobile');
+        const btnPc = document.getElementById('btn-mode-pc');
+        const dashView = document.getElementById('view-dashboard');
+
+        if (mode === 'pc') {
+            body.classList.remove('mode-mobile');
+            body.classList.add('mode-pc');
+            // Tailwindのコンテナ幅制限をPC表示時のみ解除
+            if(dashView) dashView.classList.replace('max-w-xl', 'max-w-full');
+            
+            // ボタンのスタイル反転
+            if(btnPc) btnPc.className = "px-2 py-1 rounded bg-accentBlue text-bgDark transition-all";
+            if(btnMobile) btnMobile.className = "px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition-all";
+        } else {
+            body.classList.remove('mode-pc');
+            body.classList.add('mode-mobile');
+            if(dashView) dashView.classList.replace('max-w-full', 'max-w-xl');
+            
+            if(btnMobile) btnMobile.className = "px-2 py-1 rounded bg-accentBlue text-bgDark transition-all";
+            if(btnPc) btnPc.className = "px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition-all";
+        }
+    }
 
     /* ===================================================
        🔐 認証・ログイン・権限チェック制御
@@ -985,7 +1048,7 @@
         if(chBase || pol) document.getElementById('channel-custom-input').value = chBase + pol;
     }
 
-     function saveInputState() {
+    function saveInputState() {
         if (!activeProgramId) return;
         const linkId = document.getElementById('link-select').value;
         const phase = document.getElementById('phase-select').value;
