@@ -44,16 +44,22 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 上下固定バーに絶対に侵食されないための独立コンテンツエリア */
+        /* 🚨 上下固定バーに絶対に侵食されず、かつスクロール時も上に突き抜けない独立エリア */
         .view-content {
             display: none;
-            padding-top: calc(130px + env(safe-area-inset-top, 0px)) !important;
+            padding-top: calc(90px + env(safe-area-inset-top, 0px)) !important;
             padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
             height: 100vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
         .view-content.active { display: block; }
+
+        @media (min-width: 640px) {
+            .view-content {
+                padding-top: calc(75px + env(safe-area-inset-top, 0px)) !important;
+            }
+        }
 
         .sortable-ghost {
             opacity: 0.3;
@@ -83,7 +89,7 @@
             position: sticky;
             left: 0;
             background-color: #111625 !important;
-            z-index: 10;
+            z-index: 10; /* ヘッダー最優先度 z-100 より低く配置し、潜り込みを適正化 */
             border-right: 2px solid #1e2538;
             width: 135px !important;
             min-width: 135px !important;
@@ -248,21 +254,15 @@
         </div>
     </div>
 
-    <div class="app-header fixed top-0 left-0 w-full z-30 bg-cardBg/95 backdrop-blur-md px-4 py-3 border-b border-borderStroke flex flex-col gap-2.5 sm:flex-row sm:justify-between sm:items-center shadow-lg">
-        <div class="flex items-center justify-between w-full sm:w-auto">
-            <div class="flex items-center gap-2 min-w-0">
-                <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
-                <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition"><i class="fas fa-edit"></i></button>
-            </div>
-            <div id="user-role-badge" class="text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke sm:ml-2">STAFF</div>
+    <div class="app-header fixed top-0 left-0 w-full z-[100] bg-cardBg/95 backdrop-blur-md px-4 py-3 border-b border-borderStroke flex flex-row justify-between items-center shadow-lg h-[65px]">
+        <div class="flex items-center gap-2 min-w-0">
+            <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
+            <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition"><i class="fas fa-edit"></i></button>
         </div>
         
-        <div class="flex items-center justify-between w-full sm:w-auto gap-2 border-t border-borderStroke/30 pt-1.5 sm:border-none sm:pt-0 shrink-0">
-            <div class="flex bg-bgDark border border-borderStroke p-0.5 rounded-lg text-xs font-bold w-1/2 sm:w-auto justify-center">
-                <button id="btn-mode-mobile" onclick="toggleDisplayMode('mobile')" class="flex-1 sm:flex-none px-3 py-1 rounded bg-accentBlue text-bgDark transition-all"><i class="fas fa-mobile-alt mr-1"></i>スマホ</button>
-                <button id="btn-mode-pc" onclick="toggleDisplayMode('pc')" class="flex-1 sm:flex-none px-3 py-1 rounded text-slate-400 hover:text-slate-200 transition-all"><i class="fas fa-desktop mr-1"></i>PC</button>
-            </div>
-            <button onclick="location.reload()" class="w-1/2 sm:w-auto text-xs bg-slate-800 border border-borderStroke text-slate-400 px-3 py-1.5 rounded-md active:bg-slate-700 transition font-bold text-center">大会変更</button>
+        <div class="flex items-center gap-3 shrink-0">
+            <div id="user-role-badge" class="text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
+            <button onclick="location.reload()" class="text-xs bg-slate-800 border border-borderStroke text-slate-400 px-3 py-1.5 rounded-md active:bg-slate-700 transition font-bold text-center">大会変更</button>
         </div>
     </div>
 
@@ -541,8 +541,9 @@
     let sortableInstances = { main: null, relay: null, sub: null };
 
     window.addEventListener('load', async () => {
-        const isDesktop = window.innerWidth >= 1024;
-        toggleDisplayMode(isDesktop ? 'pc' : 'mobile');
+        // 🚨 手動切り替えボタンを廃止し、ウィンドウ幅から完全に自動検知してレスポンシブ化
+        handleResponsiveLayout();
+        window.addEventListener('resize', handleResponsiveLayout);
 
         if (!sb) return;
         const { data: { session } } = await sb.auth.getSession();
@@ -553,24 +554,19 @@
         }
     });
 
-    function toggleDisplayMode(mode) {
+    function handleResponsiveLayout() {
+        const isDesktop = window.innerWidth >= 1024;
         const body = document.body;
-        const btnMobile = document.getElementById('btn-mode-mobile');
-        const btnPc = document.getElementById('btn-mode-pc');
         const dashView = document.getElementById('view-dashboard');
-
-        if (mode === 'pc') {
+        
+        if (isDesktop) {
             body.classList.remove('mode-mobile');
             body.classList.add('mode-pc');
             if(dashView) dashView.classList.replace('max-w-xl', 'max-w-full');
-            if(btnPc) btnPc.className = "px-3 py-1 rounded bg-accentBlue text-bgDark transition-all";
-            if(btnMobile) btnMobile.className = "px-3 py-1 rounded text-slate-400 hover:text-slate-200 transition-all";
         } else {
             body.classList.remove('mode-pc');
             body.classList.add('mode-mobile');
             if(dashView) dashView.classList.replace('max-w-full', 'max-w-xl');
-            if(btnMobile) btnMobile.className = "px-3 py-1 rounded bg-accentBlue text-bgDark transition-all";
-            if(btnPc) btnPc.className = "px-3 py-1 rounded text-slate-400 hover:text-slate-200 transition-all";
         }
     }
 
@@ -608,7 +604,7 @@
         }
 
         const badge = document.getElementById('user-role-badge');
-        const maintAdminBox = document.getElementById('maint-admin-box');
+        const maintNavBtn = document.getElementById('nav-maintenance');
         
         if(currentUserRole === 'admin') {
             if(badge) {
@@ -616,13 +612,14 @@
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-500/30";
             }
             if(document.getElementById('btn-welcome-create')) document.getElementById('btn-welcome-create').classList.remove('hidden');
-            if(maintAdminBox) maintAdminBox.classList.remove('hidden');
+            if(maintNavBtn) maintNavBtn.classList.remove('hidden'); // 管理者は表示
         } else {
             if(badge) {
                 badge.innerText = "FIELD STAFF";
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke";
             }
-            if(maintAdminBox) maintAdminBox.classList.add('hidden');
+            // 🚨 staffアカウントの場合はメンテナンスタブボタンを完全に非表示にする
+            if(maintNavBtn) maintNavBtn.classList.add('hidden');
         }
         document.getElementById('login-view').classList.replace('flex', 'hidden');
         fetchProgramsList();
@@ -664,6 +661,11 @@
         activeProgramId = id; activeProgramTitle = title;
         document.getElementById('active-program-display').innerText = activeProgramTitle;
         document.getElementById('welcome-view').classList.add('hidden');
+        
+        // 🚨 一般スタッフの場合、ファイル選択後にヘッダー内の編集用ペンアイコンを確実に隠す
+        const btnEditProg = document.getElementById('btn-edit-program');
+        if(currentUserRole === 'admin' && btnEditProg) btnEditProg.classList.remove('hidden');
+
         initDashboard(); loadDashboardLinkSelect();
     }
 
@@ -888,13 +890,11 @@
         }
     }
 
-    // 🛠️ 【修正】一覧取得時に固定アドレス admin@fpu.system のみを除外して他はすべて出す
     async function loadUserRoleList() {
         if (!sb || currentUserRole !== 'admin') return;
         const box = document.getElementById('user-role-list-box');
         box.innerHTML = '<div class="text-center text-xs text-slate-500 py-4">クラウド同期中...</div>';
 
-        // 🚨 固定アドレス admin@fpu.system のみを除外
         const { data, error } = await sb.from('user_roles').select('*').neq('email', 'admin@fpu.system').order('email', { ascending: true });
         if (error) {
             box.innerHTML = '<div class="text-center text-xs text-rose-400 py-4">読み込みエラー</div>';
@@ -927,7 +927,6 @@
         }).join('');
     }
 
-    // 🛠️ 【修正】トグル対象を admin と staff に戻す
     async function toggleUserRole(userId, currentRole) {
         if (!sb) return;
         const nextRole = (currentRole === 'admin') ? 'staff' : 'admin';
@@ -1103,7 +1102,13 @@
         fetchProgramsList();
     }
 
+    // 🛠️ 【セキュリティ & 表示制限強化】
     function switchView(viewName) {
+        // 🚨 staff権限アカウントの場合、メンテナンスやユーザー管理への遷移を完全に遮断
+        if (currentUserRole !== 'admin' && (viewName === 'maintenance' || viewName === 'useradmin')) {
+            viewName = 'dashboard'; // ダッシュボードへ強制送還
+        }
+
         document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
         
         const activeNavBtnId = 'nav-' + (viewName === 'useradmin' ? 'maintenance' : viewName);
