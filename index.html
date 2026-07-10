@@ -268,39 +268,19 @@
                         <div>
                             <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">変調方式</label>
                             <select id="input-mod-type" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] font-bold outline-none focus:border-accentBlue">
-                                <option value="">-- 未設定 --</option>
-                                <option value="64QAM5/6">64QAM 5/6</option>
-                                <option value="64QAM7/8">64QAM 7/8</option>
-                                <option value="16QAM1/2">16QAM 1/2</option>
-                                <option value="16QAM3/4">16QAM 3/4</option>
-                                <option value="QPSK1/2">QPSK 1/2</option>
-                                <option value="QPSK3/4">QPSK 3/4</option>
+                                <option value="">-- 読込中 --</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">プリセット</label>
                             <select id="input-preset-type" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] font-bold outline-none focus:border-accentBlue">
-                                <option value="">-- 未設定 --</option>
-                                <option value="QAM1">QAM 1</option>
-                                <option value="QAM2">QAM 2</option>
-                                <option value="QAM3">QAM 3</option>
-                                <option value="QAM4">QAM 4</option>
-                                <option value="Pre1">Pre 1</option>
-                                <option value="Pre2">Pre 2</option>
-                                <option value="Pre3">Pre 3</option>
-                                <option value="Pre4">Pre 4</option>
+                                <option value="">-- 読込中 --</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">TS-Rate</label>
                             <select id="input-ts-rate" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] font-bold outline-none focus:border-accentBlue">
-                                <option value="">-- 未設定 --</option>
-                                <option value="52.704Mbps">52.704M</option>
-                                <option value="45.174Mbps">45.174M</option>
-                                <option value="34.211Mbps">34.211M</option>
-                                <option value="23.421Mbps">23.421M</option>
-                                <option value="15.110Mbps">15.110M</option>
-                                <option value="11.710Mbps">11.710M</option>
+                                <option value="">-- 読込中 --</option>
                             </select>
                         </div>
                     </div>
@@ -703,7 +683,7 @@
             }
         });
         if (viewName === 'dashboard') { initDashboard(); loadDashboardLinkSelect(); } 
-        else if (viewName === 'input') { loadInputLinks(); } 
+        else if (viewName === 'input') { loadInputViewSequence(); } 
         else if (viewName === 'maintenance') { loadRegisteredLinks(); }
         else if (viewName === 'useradmin') { loadUserRolesList(); }
         window.scrollTo(0,0);
@@ -774,7 +754,6 @@
         }
     }
 
-    // 🌟【TX/RX型番追加版】ダッシュボードセル描画ロジック
     function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, txModel, rxModel, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
@@ -795,7 +774,6 @@
         if (fMemo) memoHtml += `<div class="text-[11px] text-emerald-400 font-bold truncate leading-tight">現:${fMemo}</div>`;
         if (cMemo) memoHtml += `<div class="text-[11px] text-accentBlue font-bold truncate leading-tight">セ:${cMemo}</div>`;
 
-        // 🚀 送信機 (TX) / 受信機 (RX) の型番項目を追加し、横幅を120pxに最適化
         let specsHtml = `
             <div class="flex flex-col gap-0.5 text-[11px] text-slate-200 border-l-2 border-slate-700/80 pl-2.5 ml-2 font-mono font-black text-left shrink-0 bg-slate-950/40 p-1 rounded-r-lg min-w-[120px]">
                 <div class="truncate flex items-center justify-between"><span class="text-pink-400 text-[10px] font-sans mr-1">変調:</span>${modType || '--'}</div>
@@ -876,8 +854,42 @@
     }
 
     /* ===================================================
-       【画面2】現場データ入力ロジック
+       【画面2】現場データ入力ロジック (マスタ連携対応)
        =================================================== */
+    async function loadInputViewSequence() {
+        await loadDropdownMasters(); // 🚀 先にマスタから選択肢パターンを取得
+        await loadInputLinks();      // その後、回線リストを読込
+    }
+
+    // 🚀 新設：選択肢マスタテーブルからデータをロードしてセレクトボックスを初期化
+    async function loadDropdownMasters() {
+        if (!sb) return;
+        try {
+            const { data, error } = await sb.from('spec_masters').select('*').order('sort_order', { ascending: true });
+            if (error) throw error;
+
+            const modSelect = document.getElementById('input-mod-type');
+            const presetSelect = document.getElementById('input-preset-type');
+            const tsSelect = document.getElementById('input-ts-rate');
+
+            // 一度リセットして未設定枠を設置
+            modSelect.innerHTML = '<option value="">-- 未設定 --</option>';
+            presetSelect.innerHTML = '<option value="">-- 未設定 --</option>';
+            tsSelect.innerHTML = '<option value="">-- 未設定 --</option>';
+
+            if (data) {
+                data.forEach(item => {
+                    const opt = `<option value="${item.value}">${item.label}</option>`;
+                    if (item.category === 'modulation') modSelect.insertAdjacentHTML('beforeend', opt);
+                    if (item.category === 'preset') presetSelect.insertAdjacentHTML('beforeend', opt);
+                    if (item.category === 'ts_rate') tsSelect.insertAdjacentHTML('beforeend', opt);
+                });
+            }
+        } catch(e) {
+            console.error("マスタデータの読み込みに失敗しました:", e.message);
+        }
+    }
+
     async function loadInputLinks() {
         if (!sb || !activeProgramId) return;
         const { data, error } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
@@ -921,7 +933,7 @@
             currentVal = data.value !== null ? parseInt(data.value, 10) : 60;
             document.getElementById('input-field-memo').value = data.field_memo || "";
             document.getElementById('input-center-memo').value = data.center_memo || "";
-            if (data.fpu_channel) document.getElementById('channel-custom-input').value = data.fpu_channel;
+            document.getElementById('channel-custom-input').value = data.fpu_channel || "";
             
             document.getElementById('input-mod-type').value = data.mod_type || "";
             document.getElementById('input-preset-type').value = data.preset_type || "";
