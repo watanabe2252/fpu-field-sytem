@@ -509,7 +509,7 @@
                 </h2>
                 <button onclick="switchView('maintenance')" class="text-xs font-bold text-slate-400 border border-borderStroke px-2 py-1 rounded-md">戻る</button>
             </div>
-            <div class="text-[11px] text-slate-400 font-bold px-1 mb-1">※ システム固定の最上位特権管理者（adminアカウント）は安全のため変更リストに表示されません。</div>
+            <div class="text-[11px] text-slate-400 font-bold px-1 mb-1">※ システム絶対権限の admin@fpu.system はリストに表示されず、常に保護されます。</div>
             <div id="user-role-list-box" class="space-y-3 min-h-[100px]">
                 <div class="text-center text-xs text-slate-500 py-4">ユーザー一覧を読込中...</div>
             </div>
@@ -888,28 +888,26 @@
         }
     }
 
-    // 🛠️ 【仕様変更】一覧取得時に role='admin' をフィルタリングしてリストから完全に排除
+    // 🛠️ 【修正】一覧取得時に固定アドレス admin@fpu.system のみを除外して他はすべて出す
     async function loadUserRoleList() {
         if (!sb || currentUserRole !== 'admin') return;
         const box = document.getElementById('user-role-list-box');
         box.innerHTML = '<div class="text-center text-xs text-slate-500 py-4">クラウド同期中...</div>';
 
-        // 🚨 admin以外の一般スタッフポジション（staff またはマネージャー等）のみを引っ張る
-        const { data, error } = await sb.from('user_roles').select('*').neq('role', 'admin').order('email', { ascending: true });
+        // 🚨 固定アドレス admin@fpu.system のみを除外
+        const { data, error } = await sb.from('user_roles').select('*').neq('email', 'admin@fpu.system').order('email', { ascending: true });
         if (error) {
             box.innerHTML = '<div class="text-center text-xs text-rose-400 py-4">読み込みエラー</div>';
             return;
         }
 
         if(!data || data.length === 0) {
-            box.innerHTML = '<div class="text-center text-xs text-slate-500 py-6">管理可能なスタッフポジション用アカウントが存在しません。</div>';
+            box.innerHTML = '<div class="text-center text-xs text-slate-500 py-6">管理可能なアカウントが存在しません。</div>';
             return;
         }
 
         box.innerHTML = data.map(u => {
-            // ここに並ぶのは、固定admin以外で内部権限フラグを切り替えるアカウントのみ
-            // 例: staff ➔ manager / subadmin 等のアプリケーション内権限切り替え
-            const isStaff = u.role === 'staff';
+            const isAdmin = u.role === 'admin';
             return `
                 <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex items-center justify-between gap-2">
                     <div class="min-w-0 flex-1">
@@ -917,8 +915,8 @@
                         <div class="text-[10px] font-mono text-slate-500 truncate">ID: ${u.id}</div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isStaff ? 'bg-slate-800 text-slate-400' : 'bg-emerald-950 text-emerald-400 border border-emerald-500/20'}">
-                            ${isStaff ? '現場スタッフ' : 'アプリ内管理者'}
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isAdmin ? 'bg-amber-950 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400'}">
+                            ${isAdmin ? '管理者(管理者画面可)' : '現場スタッフ'}
                         </span>
                         <button onclick="toggleUserRole('${u.id}', '${u.role}')" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-bold text-accentBlue transition-all">
                             権限切替
@@ -929,14 +927,17 @@
         }).join('');
     }
 
-    // 🛠️ 【仕様変更】トグル時の保護（固定adminへの誤操作を防ぐ）
+    // 🛠️ 【修正】トグル対象を admin と staff に戻す
     async function toggleUserRole(userId, currentRole) {
         if (!sb) return;
-        // staff と manager/subadmin 等の間でトグル（最上位の固定adminへは昇格させない）
-        const nextRole = (currentRole === 'staff') ? 'manager' : 'staff';
+        const nextRole = (currentRole === 'admin') ? 'staff' : 'admin';
 
         const { error } = await sb.from('user_roles').update({ role: nextRole }).eq('id', userId);
         if (!error) {
+            const mySession = await sb.auth.getSession();
+            if (userId === mySession.data.session?.user.id) {
+                await syncUserRoleAndInit(userId, mySession.data.session?.user.email);
+            }
             await loadUserRoleList();
         }
     }
