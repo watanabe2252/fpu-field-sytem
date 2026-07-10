@@ -33,17 +33,26 @@
     
     <style>
         *, *::before, *::after {
-            box-sizing: border-box; /* 要素のサイズ計算を安全に固定化 */
+            box-sizing: border-box;
         }
         body {
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 95px); /* 下部ナビが切れるのを防ぐ十分な余白 */
             min-height: 100dvh;
+            margin: 0;
+            padding: 0;
+            background-color: #070a13;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .view-content { display: none; }
+        /* 上下固定バーに絶対に侵食されないための独立コンテンツエリア */
+        .view-content {
+            display: none;
+            padding-top: calc(130px + env(safe-area-inset-top, 0px)) !important;
+            padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+            height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
         .view-content.active { display: block; }
 
         .sortable-ghost {
@@ -123,7 +132,7 @@
         }
     </style>
 </head>
-<body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
+<body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
     <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
@@ -239,7 +248,7 @@
         </div>
     </div>
 
-    <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-4 pt-4 pb-4 border-b border-borderStroke flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+    <div class="app-header fixed top-0 left-0 w-full z-30 bg-cardBg/95 backdrop-blur-md px-4 py-3 border-b border-borderStroke flex flex-col gap-2.5 sm:flex-row sm:justify-between sm:items-center shadow-lg">
         <div class="flex items-center justify-between w-full sm:w-auto">
             <div class="flex items-center gap-2 min-w-0">
                 <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
@@ -248,7 +257,7 @@
             <div id="user-role-badge" class="text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke sm:ml-2">STAFF</div>
         </div>
         
-        <div class="flex items-center justify-between w-full sm:w-auto gap-2 border-t border-borderStroke/30 pt-2 sm:border-none sm:pt-0 shrink-0">
+        <div class="flex items-center justify-between w-full sm:w-auto gap-2 border-t border-borderStroke/30 pt-1.5 sm:border-none sm:pt-0 shrink-0">
             <div class="flex bg-bgDark border border-borderStroke p-0.5 rounded-lg text-xs font-bold w-1/2 sm:w-auto justify-center">
                 <button id="btn-mode-mobile" onclick="toggleDisplayMode('mobile')" class="flex-1 sm:flex-none px-3 py-1 rounded bg-accentBlue text-bgDark transition-all"><i class="fas fa-mobile-alt mr-1"></i>スマホ</button>
                 <button id="btn-mode-pc" onclick="toggleDisplayMode('pc')" class="flex-1 sm:flex-none px-3 py-1 rounded text-slate-400 hover:text-slate-200 transition-all"><i class="fas fa-desktop mr-1"></i>PC</button>
@@ -257,7 +266,7 @@
         </div>
     </div>
 
-    <div id="view-dashboard" class="view-content active px-4 pt-4 pb-6 space-y-4 max-w-xl mx-auto transition-all">
+    <div id="view-dashboard" class="view-content active px-4 space-y-4 max-w-xl mx-auto transition-all">
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
@@ -338,7 +347,7 @@
         </div>
     </div>
 
-    <div id="view-input" class="view-content px-4 pt-4 pb-6 space-y-6">
+    <div id="view-input" class="view-content px-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
                 <i class="fas fa-edit"></i> 電界データ＆Ch入力
@@ -376,6 +385,7 @@
                         <input type="text" id="channel-custom-input" oninput="saveInputState();" placeholder="手入力可" class="w-[95px] bg-bgDark border border-amber-500/60 text-amber-400 rounded-xl px-3 py-3 text-sm text-center outline-none focus:border-accentBlue font-black uppercase placeholder-slate-600">
                     </div>
                 </div>
+                
                 <div class="pt-2 border-t border-borderStroke/40 space-y-2">
                     <label class="block text-xs text-accentBlue font-bold uppercase tracking-wider">④ 回線スペック＆機器パラメータ</label>
                     <div class="grid grid-cols-3 gap-2">
@@ -408,7 +418,15 @@
                             <input type="text" id="input-rx-model" placeholder="例: FR-800" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-xs font-bold outline-none focus:border-accentBlue placeholder-slate-700">
                         </div>
                     </div>
+                    
+                    <div class="flex items-center gap-2 pt-1.5 px-1 bg-slate-950/40 border border-borderStroke/60 p-2 rounded-xl mt-1">
+                        <input type="checkbox" id="batch-all-phases" class="w-4 h-4 rounded accent-accentBlue cursor-pointer">
+                        <label for="batch-all-phases" class="text-[11px] text-slate-300 font-bold cursor-pointer select-none">
+                            このスペック情報を全日程に一括反映する
+                        </label>
+                    </div>
                 </div>
+
                 <div class="text-center pt-2">
                     <label class="text-xs text-slate-400 font-bold uppercase tracking-wider">⑤ 電界強度数値入力</label>
                     <div class="flex items-center justify-center gap-3 my-3">
@@ -439,7 +457,7 @@
         </div>
     </div>
 
-    <div id="view-maintenance" class="view-content px-4 pt-4 pb-6 space-y-6">
+    <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex items-center justify-between">
                 <div>
@@ -483,7 +501,7 @@
         </div>
     </div>
 
-    <div id="view-useradmin" class="view-content px-4 pt-4 pb-6 space-y-6">
+    <div id="view-useradmin" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
                 <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
@@ -495,15 +513,15 @@
         </div>
     </div>
 
-    <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,0px)]">
+    <div class="bottom-nav fixed bottom-0 left-0 w-full h-[75px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,4px)] pt-2 justify-between items-center shadow-2xl">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
-            <span class="text-base"><i class="fas fa-chart-bar"></i></span><span class="text-[10px] font-bold">ダッシュボード</span>
+            <span class="text-lg"><i class="fas fa-chart-bar"></i></span><span class="text-[10px] font-bold tracking-tight">ダッシュボード</span>
         </button>
         <button id="nav-input" onclick="switchView('input')" class="flex-1 bg-none border-none text-slate-500 flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
-            <span class="text-base"><i class="fas fa-pen-to-square"></i></span><span class="text-[10px] font-bold">データ入力</span>
+            <span class="text-lg"><i class="fas fa-pen-to-square"></i></span><span class="text-[10px] font-bold tracking-tight">データ入力</span>
         </button>
         <button id="nav-maintenance" onclick="switchView('maintenance')" class="flex-1 bg-none border-none text-slate-500 flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
-            <span class="text-base"><i class="fas fa-tools"></i></span><span class="text-[10px] font-bold">メンテナンス</span>
+            <span class="text-lg"><i class="fas fa-tools"></i></span><span class="text-[10px] font-bold tracking-tight">メンテナンス</span>
         </button>
     </div>
 
@@ -810,16 +828,16 @@
         document.getElementById('db-value').innerText = currentVal;
     }
 
+    // 🛠️ 【機能改修】一括書き込みロジックを統合
     async function submitToSupabase() {
         const linkId = document.getElementById('link-select').value;
-        const phase = document.getElementById('phase-select').value;
-        if (!linkId || !phase) return;
+        const currentPhase = document.getElementById('phase-select').value;
+        const batchAll = document.getElementById('batch-all-phases').checked;
+        if (!linkId || !currentPhase) return;
 
-        const { error } = await sb.from('records').upsert({
+        const baseRecord = {
             program_id: activeProgramId,
             link_id: linkId,
-            phase: phase,
-            value: parseInt(currentVal, 10),
             field_memo: document.getElementById('input-field-memo').value.trim(),
             center_memo: document.getElementById('input-center-memo').value.trim(),
             fpu_channel: document.getElementById('channel-custom-input').value.trim(),
@@ -828,12 +846,47 @@
             ts_rate: document.getElementById('input-ts-rate').value,
             tx_model: document.getElementById('input-tx-model').value.trim(),
             rx_model: document.getElementById('input-rx-model').value.trim()
-        }, { onConflict: 'program_id,link_id,phase' });
+        };
 
-        if(!error) {
+        let promises = [];
+
+        if (batchAll) {
+            // 全日程（tech, run, rehe, prod）に対して個別にupsertを実行
+            const allPhases = ['tech', 'run', 'rehe', 'prod'];
+            
+            for (const phase of allPhases) {
+                // すでにクラウド上にレコードがある場合、その電界強度数値を保持するため一旦取得を試みる
+                const { data: ext } = await sb.from('records').select('value').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
+                
+                // 選択中のカレントフェーズであれば画面の値を使い、それ以外なら既存データか初期値(60)を使う
+                let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (ext ? ext.value : 60);
+                
+                promises.push(sb.from('records').upsert({
+                    ...baseRecord,
+                    phase: phase,
+                    value: valToSubmit
+                }, { onConflict: 'program_id,link_id,phase' }));
+            }
+        } else {
+            // 単発書き込み
+            promises.push(sb.from('records').upsert({
+                ...baseRecord,
+                phase: currentPhase,
+                value: parseInt(currentVal, 10)
+            }, { onConflict: 'program_id,link_id,phase' }));
+        }
+
+        const results = await Promise.all(promises);
+        const hasError = results.some(r => r.error);
+
+        if (!hasError) {
             const msg = document.getElementById('status-msg');
-            msg.innerText = "✔ 送信成功";
+            msg.innerText = batchAll ? "✔ 全日程への一括送信成功" : "✔ 送信成功";
             setTimeout(() => { msg.innerText = ""; }, 2000);
+        } else {
+            const msg = document.getElementById('status-msg');
+            msg.innerText = "❌ エラーが発生しました";
+            msg.className = "text-center text-xs font-bold text-rose-400 pt-1";
         }
     }
 
@@ -947,6 +1000,7 @@
         localStorage.setItem(`fpu_saved_link_${activeProgramId}`, document.getElementById('link-select').value);
     }
 
+    UX=true;
     function openCreateModal() { document.getElementById('create-modal').classList.replace('hidden', 'flex'); }
     function closeCreateModal() { document.getElementById('create-modal').classList.replace('flex', 'hidden'); }
     function openEditProgramModalFromHeader() {
@@ -1016,6 +1070,8 @@
             if (viewName === 'dashboard') initDashboard();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
+            
+            targetView.scrollTop = 0;
         }
     }
 </script>
