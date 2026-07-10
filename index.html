@@ -44,10 +44,23 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 🚨 上下固定バーに絶対に侵食されず、かつスクロール時も上に突き抜けない独立エリア */
+        /* 📱 固定ヘッダー（OSステータスバー完全回避 ＋ 最前面レイヤー化） */
+        .app-header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important; /* テーブルの固定列(z-index:20)を完全に殺す絶対優先度 */
+            padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 時計表示の真下に配置 */
+            background-color: rgba(17, 22, 37, 0.96) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+        }
+
+        /* 🚨 上下固定バーに絶対に侵食されず、スクロール時もヘッダーの下に潜り込ませる独立コンテンツエリア */
         .view-content {
             display: none;
-            padding-top: calc(90px + env(safe-area-inset-top, 0px)) !important;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 95px) !important; /* ヘッダーの厚み分を完全に確保 */
             padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
             height: 100vh;
             overflow-y: auto;
@@ -57,7 +70,7 @@
 
         @media (min-width: 640px) {
             .view-content {
-                padding-top: calc(75px + env(safe-area-inset-top, 0px)) !important;
+                padding-top: calc(env(safe-area-inset-top, 0px) + 85px) !important;
             }
         }
 
@@ -89,7 +102,7 @@
             position: sticky;
             left: 0;
             background-color: #111625 !important;
-            z-index: 10; /* ヘッダー最優先度 z-100 より低く配置し、潜り込みを適正化 */
+            z-index: 20; /* スクロール時に横移動するセルより上、ただしアプリヘッダー(z-1000)の下にくぐる */
             border-right: 2px solid #1e2538;
             width: 135px !important;
             min-width: 135px !important;
@@ -98,7 +111,7 @@
             word-wrap: break-word;
             white-space: normal;
         }
-        body.mode-mobile th:first-child { z-index: 20; }
+        body.mode-mobile th:first-child { z-index: 25; }
         body.mode-mobile th:not(:first-child), 
         body.mode-mobile td:not(:first-child) {
             width: 165px !important;
@@ -140,7 +153,7 @@
 </head>
 <body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
-    <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
+    <div id="login-view" class="fixed inset-0 bg-bgDark z-[2000] flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <div class="text-center space-y-1">
                 <h2 class="text-base font-black text-white flex items-center justify-center gap-2">
@@ -165,7 +178,7 @@
         </div>
     </div>
 
-    <div id="welcome-view" class="fixed inset-0 bg-bgDark z-40 flex items-center justify-center p-4">
+    <div id="welcome-view" class="fixed inset-0 bg-bgDark z-[1500] flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
             <div class="flex justify-between items-center mb-6 shrink-0">
                 <h2 class="text-base font-black text-white flex items-center gap-2">
@@ -188,7 +201,7 @@
         </div>
     </div>
 
-    <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
                 <i class="fas fa-plus-circle"></i> 新しい中継番組・大会の作成
@@ -210,7 +223,7 @@
         </div>
     </div>
 
-    <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
                 <i class="fas fa-edit"></i> 番組設定の編集
@@ -232,7 +245,7 @@
         </div>
     </div>
 
-    <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
                 <i class="fas fa-copy"></i> 番組ファイルの複製 (構造コピー)
@@ -254,15 +267,15 @@
         </div>
     </div>
 
-    <div class="app-header fixed top-0 left-0 w-full z-[100] bg-cardBg/95 backdrop-blur-md px-4 py-3 border-b border-borderStroke flex flex-row justify-between items-center shadow-lg h-[65px]">
-        <div class="flex items-center gap-2 min-w-0">
+    <div class="app-header px-4 pb-3 border-b border-borderStroke flex flex-row justify-between items-center shadow-lg">
+        <div class="flex items-center gap-1.5 min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
             <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition"><i class="fas fa-edit"></i></button>
         </div>
         
-        <div class="flex items-center gap-3 shrink-0">
-            <div id="user-role-badge" class="text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
-            <button onclick="location.reload()" class="text-xs bg-slate-800 border border-borderStroke text-slate-400 px-3 py-1.5 rounded-md active:bg-slate-700 transition font-bold text-center">大会変更</button>
+        <div class="flex items-center gap-2 shrink-0">
+            <div id="user-role-badge" class="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
+            <button onclick="location.reload()" class="text-xs bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition font-bold text-center">大会変更</button>
         </div>
     </div>
 
@@ -541,7 +554,6 @@
     let sortableInstances = { main: null, relay: null, sub: null };
 
     window.addEventListener('load', async () => {
-        // 🚨 手動切り替えボタンを廃止し、ウィンドウ幅から完全に自動検知してレスポンシブ化
         handleResponsiveLayout();
         window.addEventListener('resize', handleResponsiveLayout);
 
@@ -612,13 +624,12 @@
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-500/30";
             }
             if(document.getElementById('btn-welcome-create')) document.getElementById('btn-welcome-create').classList.remove('hidden');
-            if(maintNavBtn) maintNavBtn.classList.remove('hidden'); // 管理者は表示
+            if(maintNavBtn) maintNavBtn.classList.remove('hidden');
         } else {
             if(badge) {
                 badge.innerText = "FIELD STAFF";
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke";
             }
-            // 🚨 staffアカウントの場合はメンテナンスタブボタンを完全に非表示にする
             if(maintNavBtn) maintNavBtn.classList.add('hidden');
         }
         document.getElementById('login-view').classList.replace('flex', 'hidden');
@@ -662,7 +673,6 @@
         document.getElementById('active-program-display').innerText = activeProgramTitle;
         document.getElementById('welcome-view').classList.add('hidden');
         
-        // 🚨 一般スタッフの場合、ファイル選択後にヘッダー内の編集用ペンアイコンを確実に隠す
         const btnEditProg = document.getElementById('btn-edit-program');
         if(currentUserRole === 'admin' && btnEditProg) btnEditProg.classList.remove('hidden');
 
@@ -895,7 +905,7 @@
         const box = document.getElementById('user-role-list-box');
         box.innerHTML = '<div class="text-center text-xs text-slate-500 py-4">クラウド同期中...</div>';
 
-        const { data, error } = await sb.from('user_roles').select('*').neq('email', 'admin@fpu.system').order('email', { ascending: true });
+        const { data, error = null } = await sb.from('user_roles').select('*').neq('email', 'admin@fpu.system').order('email', { ascending: true });
         if (error) {
             box.innerHTML = '<div class="text-center text-xs text-rose-400 py-4">読み込みエラー</div>';
             return;
@@ -1102,11 +1112,9 @@
         fetchProgramsList();
     }
 
-    // 🛠️ 【セキュリティ & 表示制限強化】
     function switchView(viewName) {
-        // 🚨 staff権限アカウントの場合、メンテナンスやユーザー管理への遷移を完全に遮断
         if (currentUserRole !== 'admin' && (viewName === 'maintenance' || viewName === 'useradmin')) {
-            viewName = 'dashboard'; // ダッシュボードへ強制送還
+            viewName = 'dashboard';
         }
 
         document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
