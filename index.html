@@ -734,7 +734,7 @@
         if (cell) cell.innerHTML = `<div class="bg-slate-900/40 rounded-xl p-2 min-h-[110px] flex justify-center items-center"><div class="text-sm font-bold text-slate-600">--</div></div>`;
     }
 
-    // 🛠️ スペース再配置＆フォントサイズ拡大調整
+    // 🛠️ 略称を「変調」「プリセット」「TSレート」に完全展開して表示
     function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, txModel, rxModel, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
@@ -750,19 +750,19 @@
         if (fMemo) memoHtml += `<div class="text-xs text-emerald-400 font-bold truncate bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-800/30">現:${fMemo}</div>`;
         if (cMemo) memoHtml += `<div class="text-xs text-accentBlue font-bold truncate bg-sky-950/40 px-1 py-0.5 rounded border border-sky-800/30">セ:${cMemo}</div>`;
 
-        // 左右2分割のグリッド構造にリビルドし、文字サイズを「text-xs」に拡大して再配置
+        // 💡 ラベルを日本語の正式名称に展開して再構成
         let specsHtml = `
-            <div class="grid grid-cols-2 gap-x-1.5 gap-y-0.5 text-xs text-slate-300 font-mono text-left w-full bg-slate-950/60 px-1.5 py-1 rounded border border-slate-800 mt-1.5">
-                <div class="truncate"><span class="text-slate-500 font-sans">変:</span>${modType || '-'}</div>
-                <div class="truncate"><span class="text-slate-500 font-sans">TX:</span>${txModel || '-'}</div>
-                <div class="truncate"><span class="text-slate-500 font-sans">Ｐ:</span>${presetType || '-'}</div>
-                <div class="truncate"><span class="text-slate-500 font-sans">RX:</span>${rxModel || '-'}</div>
-                <div class="truncate col-span-2 border-t border-slate-800/80 mt-0.5 pt-0.5"><span class="text-slate-500 font-sans">Ｔ:</span>${tsRate || '-'}</div>
+            <div class="grid grid-cols-1 gap-y-0.5 text-xs text-slate-300 font-mono text-left w-full bg-slate-950/60 px-1.5 py-1 rounded border border-slate-800 mt-1.5">
+                <div class="truncate flex justify-between"><span class="text-slate-500 font-sans shrink-0">変調:</span><span class="text-right truncate flex-1 pl-1">${modType || '-'}</span></div>
+                <div class="truncate flex justify-between"><span class="text-slate-500 font-sans shrink-0">プリセット:</span><span class="text-right truncate flex-1 pl-1">${presetType || '-'}</span></div>
+                <div class="truncate flex justify-between border-b border-slate-800/50 pb-0.5 mb-0.5"><span class="text-slate-500 font-sans shrink-0">TSレート:</span><span class="text-right truncate flex-1 pl-1">${tsRate || '-'}</span></div>
+                <div class="truncate flex justify-between text-slate-400"><span class="text-slate-500 font-sans shrink-0">TX:</span><span class="text-right truncate flex-1 pl-1">${txModel || '-'}</span></div>
+                <div class="truncate flex justify-between text-slate-400"><span class="text-slate-500 font-sans shrink-0">RX:</span><span class="text-right truncate flex-1 pl-1">${rxModel || '-'}</span></div>
             </div>
         `;
 
         cell.innerHTML = `
-            <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[125px] flex flex-col justify-between shadow-sm transition-all">
+            <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[140px] flex flex-col justify-between shadow-sm transition-all">
                 <div>
                     <div class="flex items-center justify-between w-full">
                         ${chHtml}
