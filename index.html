@@ -89,30 +89,36 @@
             padding: 4px !important;
         }
 
-        /* 💻 【PCモード】スタイル定義 */
+        /* 💻 【PCモード】幅バラバラ問題を解消するスタイル定義 */
         body.mode-pc .max-w-xl {
             max-w-full !important;
-            max-width: 95% !important;
+            max-width: 98% !important;
         }
         body.mode-pc .table-container {
             overflow-x: visible !important;
         }
         body.mode-pc table {
-            table-layout: auto !important;
+            table-layout: fixed !important; /* 自動計算を排除し固定幅に強制 */
+            width: 100% !important;
         }
         body.mode-pc th, body.mode-pc td {
             position: static !important;
             box-shadow: none !important;
-            width: auto !important;
-            min-width: 0 !important;
-            max-width: none !important;
-            padding: 8px !important;
+            padding: 6px !important;
             border-right: 1px solid #1e2538 !important;
         }
+        /* 回線名カラムをPCでは240pxに固定 */
         body.mode-pc th:first-child, body.mode-pc td:first-child {
             border-right: 2px solid #1e2538 !important;
-            width: 220px !important;
-            min-width: 220px !important;
+            width: 240px !important;
+            min-width: 240px !important;
+            max-width: 240px !important;
+        }
+        /* 技術・走行・リハ・本番のカラム幅を完全均等(等幅)に分配 */
+        body.mode-pc th:not(:first-child), body.mode-pc td:not(:first-child) {
+            width: calc((100% - 240px) / 4) !important;
+            min-width: 160px !important;
+            max-width: none !important;
         }
     </style>
 </head>
@@ -195,7 +201,7 @@
             </h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID (変更すると関連データも引き継がれます)</label>
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID</label>
                     <input type="text" id="edit-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue block transition-all font-mono">
                 </div>
                 <div>
@@ -512,7 +518,6 @@
     let currentUserRole = "staff";
     let sortableInstances = { main: null, relay: null, sub: null };
 
-    // 🚀 アプリ初期化処理
     window.addEventListener('load', async () => {
         const isDesktop = window.innerWidth >= 1024;
         toggleDisplayMode(isDesktop ? 'pc' : 'mobile');
@@ -526,7 +531,6 @@
         }
     });
 
-    // 💻/📱 表示モードの変更制御
     function toggleDisplayMode(mode) {
         const body = document.body;
         const btnMobile = document.getElementById('btn-mode-mobile');
@@ -548,13 +552,11 @@
         }
     }
 
-    // 🛠️ 強力な矢印自動折り返し・HTML整形関数
     function formatLinkLabel(name) {
         if (!name) return "";
         return name.replace(/\s*([➔→\-\>=\>]+)\s*/g, '<br><span class="text-accentBlue font-bold">➔</span> ');
     }
 
-    // 🔐 ログイン認証処理
     async function handleLogin() {
         if (!sb) return;
         const email = document.getElementById('login-email').value.trim();
@@ -574,7 +576,6 @@
         location.reload();
     }
 
-    // 🛡️ ロール同期と初期化起動
     async function syncUserRoleAndInit(userId, email) {
         if (email === 'admin@fpu.system') {
             currentUserRole = "admin";
@@ -601,7 +602,6 @@
         fetchProgramsList();
     }
 
-    // 📁 大会ファイル読み出し
     async function fetchProgramsList() {
         if (!sb) return;
         const listBox = document.getElementById('program-list-box');
@@ -641,7 +641,6 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
-    // 📊 ダッシュボード描画 & リアルタイム通信バインド
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
@@ -677,7 +676,6 @@
             }
         }
 
-        // ⚡ Supabase Realtime 購読開始
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
             const updated = payload.new || payload.old;
@@ -733,7 +731,6 @@
         }
     }
 
-    // ✍ データ入力画面周り制御
     async function loadInputViewSequence() {
         await loadDropdownMasters(); 
         await loadInputLinks();      
@@ -826,7 +823,6 @@
         }
     }
 
-    // クイックセンターメモ
     async function loadDashboardLinkSelect() {
         const { data } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
         if (data) document.getElementById('dash-link-select').innerHTML = data.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
@@ -857,7 +853,6 @@
         initDashboard();
     }
 
-    // 🛠️ メンテナンス画面ロジック
     async function loadRegisteredLinks() {
         if (!sb || !activeProgramId || currentUserRole !== 'admin') return;
         const boxMain = document.getElementById('maint-box-main');
@@ -882,7 +877,6 @@
             });
         }
 
-        // Sortable.jsのインスタンス生成
         destroyAllSortable();
         const sortOptions = { animation: 150, ghostClass: 'sortable-ghost', forceFallback: true };
         sortableInstances.main = new Sortable(boxMain, sortOptions);
@@ -937,7 +931,6 @@
         localStorage.setItem(`fpu_saved_link_${activeProgramId}`, document.getElementById('link-select').value);
     }
 
-    // モーダル制御関係
     function openCreateModal() { document.getElementById('create-modal').classList.replace('hidden', 'flex'); }
     function closeCreateModal() { document.getElementById('create-modal').classList.replace('flex', 'hidden'); }
     function openEditProgramModalFromHeader() {
@@ -956,7 +949,6 @@
         if(!error) { closeCreateModal(); fetchProgramsList(); }
     }
 
-    // 👯 大会ファイル複製機能の実装
     let duplicateSourceId = "";
     function openDuplicateModal(id, currentTitle) {
         duplicateSourceId = id;
@@ -990,7 +982,6 @@
         fetchProgramsList();
     }
 
-    // 🔄 グローバルビュー切り替え制御
     function switchView(viewName) {
         document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
         
