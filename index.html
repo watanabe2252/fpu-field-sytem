@@ -44,7 +44,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 📱 固定ヘッダー（OSステータスバー回避・最前面） */
+        /* 📱 固定ヘッダー（OSステータスバー回避・最前面固定） */
         .app-header {
             position: fixed !important;
             top: 0 !important;
@@ -83,13 +83,17 @@
             background-color: #1a2035 !important;
         }
 
+        /* スクロール用コンテナ（カードデザインと調和） */
         .table-container {
             overflow-x: auto;
             position: relative;
             -webkit-overflow-scrolling: touch;
             width: 100%;
             background-color: #111625;
+            border: 1px solid #1e2538;
             border-radius: 1rem;
+            padding: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
         table {
             width: 100%;
@@ -98,22 +102,23 @@
             table-layout: fixed;
         }
 
-        /* 📱 【スマホモード】スタイル定義 */
-        /* 見出し行（セクションタイトル）を完全にテーブルと一体化して左端を揃え、裏側を隠蔽 */
-        body.mode-mobile .maint-title-row th {
+        /* 📱 【スマホモード】スクロール・チラ見え遮断・左端ライン完全同期スタイル */
+        /* 🚨 見出しを左端にガチガチに固定し、背景を完全に塗りつぶして裏の回り込みをシャットアウト */
+        body.mode-mobile .maint-group-title {
             position: sticky !important;
             left: 0 !important;
-            z-index: 40 !important; /* 横スクロール時も絶対に文字が動かずベースを隠す */
+            width: 100% !important;
             background-color: #111625 !important;
-            text-align: left;
-            padding: 12px 10px !important;
+            z-index: 40 !important; /* 横スクロールしてくるデータより確実に上に重ねる */
+            margin-left: 0 !important;
+            padding-left: 2px !important; /* 対象回線テキストの左端ラインと完璧に合流 */
         }
 
         body.mode-mobile th:first-child {
             position: sticky !important;
             left: 0 !important;
             background-color: #111625 !important;
-            z-index: 30 !important; /* 「対象回線」ヘッダセル */
+            z-index: 35 !important; 
             border-right: 2px solid #1e2538;
             width: 135px !important;
             min-width: 135px !important;
@@ -124,7 +129,7 @@
             position: sticky !important;
             left: 0 !important;
             background-color: #111625 !important;
-            z-index: 25 !important; /* 対象回線名のブロック（裏スクロール文字をシャットアウト） */
+            z-index: 30 !important; /* 対象回線名の固定ブロック */
             border-right: 2px solid #1e2538;
             width: 135px !important;
             min-width: 135px !important;
@@ -143,7 +148,7 @@
             z-index: 10 !important;
         }
 
-        /* 💻 【PCモード】幅等幅スタイル定義 */
+        /* 💻 【PCモード】等幅スタイル定義 */
         body.mode-pc .max-w-xl {
             max-w-full !important;
             max-width: 98% !important;
@@ -162,10 +167,11 @@
             border-right: 1px solid #1e2538 !important;
             z-index: auto !important;
         }
-        body.mode-pc .maint-title-row th {
+        body.mode-pc .maint-group-title {
             position: static !important;
             z-index: auto !important;
             background-color: transparent !important;
+            padding-left: 0 !important;
         }
         body.mode-pc th:first-child, body.mode-pc td:first-child {
             border-right: 2px solid #1e2538 !important;
@@ -333,60 +339,54 @@
         </div>
 
         <div class="grid grid-cols-1 gap-6">
-            <div class="table-container border border-borderStroke p-3 shadow-xl no-scrollbar">
+            <div class="table-container no-scrollbar">
+                <h2 class="maint-group-title text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
+                    <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
+                </h2>
                 <table>
                     <thead>
-                        <tr class="maint-title-row">
-                            <th colspan="5" class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2">
-                                <i class="fas fa-broadcast-tower mr-1"></i> 本線基幹ルート (親局直受)
-                            </th>
-                        </tr>
                         <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left py-2 pl-2">対象回線</th>
-                            <th>技術</th>
-                            <th>走行</th>
-                            <th>リハ</th>
-                            <th class="text-accentBlue">本番</th>
+                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5">技術</th>
+                            <th class="pb-1.5">走行</th>
+                            <th class="pb-1.5">リハ</th>
+                            <th class="pb-1.5 text-accentBlue">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-main" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
 
-            <div class="table-container border border-borderStroke p-3 shadow-xl no-scrollbar">
+            <div class="table-container no-scrollbar">
+                <h2 class="maint-group-title text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
+                    <i class="fas fa-route"></i> 中継所リレーリンク
+                </h2>
                 <table>
                     <thead>
-                        <tr class="maint-title-row">
-                            <th colspan="5" class="text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2">
-                                <i class="fas fa-route mr-1"></i> 中継所リレーリンク
-                            </th>
-                        </tr>
                         <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left py-2 pl-2">対象回線</th>
-                            <th>技術</th>
-                            <th>走行</th>
-                            <th>リハ</th>
-                            <th class="text-accentOrange">本番</th>
+                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5">技術</th>
+                            <th class="pb-1.5">走行</th>
+                            <th class="pb-1.5">リハ</th>
+                            <th class="pb-1.5 text-accentOrange">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-relay" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
 
-            <div class="table-container border border-borderStroke p-3 shadow-xl no-scrollbar">
+            <div class="table-container no-scrollbar">
+                <h2 class="maint-group-title text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
+                    <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
+                </h2>
                 <table>
                     <thead>
-                        <tr class="maint-title-row">
-                            <th colspan="5" class="text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2">
-                                <i class="fas fa-shield-alt mr-1"></i> 予備・特設・ヘリ系統
-                            </th>
-                        </tr>
                         <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left py-2 pl-2">対象回線</th>
-                            <th>技術</th>
-                            <th>走行</th>
-                            <th>リハ</th>
-                            <th class="text-slate-300">本番</th>
+                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5">技術</th>
+                            <th class="pb-1.5">走行</th>
+                            <th class="pb-1.5">リハ</th>
+                            <th class="pb-1.5 text-slate-300">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-sub" class="divide-y divide-borderStroke/30"></tbody>
