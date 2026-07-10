@@ -55,9 +55,7 @@
 </head>
 <body class="bg-bgDark text-slate-100 font-sans select-none overflow-x-hidden">
 
-    <!-- ===================================================
-       0. ログイン画面 (認証の壁)
-       =================================================== -->
+    <!-- 0. ログイン画面 -->
     <div id="login-view" class="fixed inset-0 bg-bgDark z-50 flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <div class="text-center space-y-1">
@@ -83,9 +81,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       1. 起動時：大会ファイル選択画面
-       =================================================== -->
+    <!-- 1. 大会ファイル選択画面 -->
     <div id="welcome-view" class="fixed inset-0 bg-bgDark z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
             
@@ -93,7 +89,6 @@
                 <h2 class="text-base font-black text-white flex items-center gap-2">
                     <i class="fas fa-folder-open text-accentBlue"></i> 大会ファイルを選択
                 </h2>
-                <!-- 管理者のみ表示される新規作成ボタン -->
                 <button onclick="openCreateModal()" id="btn-welcome-create" class="hidden bg-emerald-950/40 border border-accentGreen text-accentGreen text-xs font-bold px-4 py-2 rounded-full hover:bg-accentGreen hover:text-bgDark transition-all">
                     <i class="fas fa-plus mr-1"></i> 新規作成
                 </button>
@@ -105,14 +100,13 @@
 
             <div id="system-status-msg" class="text-rose-400 text-[11px] font-bold text-center mt-3 empty:hidden bg-rose-950/20 border border-rose-500/30 p-2 rounded-xl"></div>
             
-            <!-- ログアウトボタン -->
             <button onclick="handleLogout()" class="mt-4 border border-borderStroke text-slate-500 font-bold text-xs py-2 rounded-xl hover:text-rose-400 transition shrink-0 text-center">
                 <i class="fas fa-sign-out-alt mr-1"></i> アカウントサインアウト
             </button>
         </div>
     </div>
 
-    <!-- 1-2. 新規作成ポップアップモーダル -->
+    <!-- 新規作成モーダル -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -135,7 +129,7 @@
         </div>
     </div>
 
-    <!-- 1-3. 番組設定（ID・名称）編集ポップアップモーダル -->
+    <!-- 編集モーダル -->
     <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -158,7 +152,7 @@
         </div>
     </div>
 
-    <!-- 1-4. 番組複製 ポップアップモーダル -->
+    <!-- 複製モーダル -->
     <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
@@ -181,9 +175,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       2. メインアプリ共通ヘッダー
-       =================================================== -->
+    <!-- 2. メインアプリ共通ヘッダー -->
     <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-5 py-4 border-b border-borderStroke flex justify-between items-center">
         <div class="flex items-center gap-2 max-w-[50%] min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
@@ -197,11 +189,8 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       VIEW 1: ダッシュボードモニター画面
-       =================================================== -->
+    <!-- VIEW 1: ダッシュボードモニター画面 -->
     <div id="view-dashboard" class="view-content active p-4 space-y-4">
-        <!-- クイックセンターメモ入力フォーム -->
         <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
@@ -226,7 +215,6 @@
         </div>
 
         <div class="grid grid-cols-1 gap-6">
-            <!-- 本線ブロック -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
                 <h2 class="text-base font-black text-accentBlue border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
@@ -237,7 +225,6 @@
                 </table>
             </div>
 
-            <!-- リレーブロック -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
                 <h2 class="text-base font-black text-accentOrange border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-route"></i> 中継所リレーリンク
@@ -248,7 +235,6 @@
                 </table>
             </div>
 
-            <!-- 予備ブロック -->
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
                 <h2 class="text-base font-black text-slate-300 border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
                     <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
@@ -261,9 +247,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       VIEW 2: 現場入力画面
-       =================================================== -->
+    <!-- VIEW 2: 現場入力画面 -->
     <div id="view-input" class="view-content p-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
@@ -306,8 +290,27 @@
                     </div>
                 </div>
 
+                <!-- 【新規追加機能】変調方式・プリセット・TS-Rate の入力欄 -->
+                <div class="pt-2 border-t border-borderStroke/40 space-y-2">
+                    <label class="block text-[10px] text-accentBlue font-bold uppercase tracking-wider">④ 回線変調スペックパラメータ (メンテナンス用)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">変調方式</label>
+                            <input type="text" id="input-mod-type" placeholder="64QAM5/6" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] outline-none focus:border-accentBlue placeholder-slate-600">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">プリセット</label>
+                            <input type="text" id="input-preset-type" placeholder="QAM1" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] outline-none focus:border-accentBlue placeholder-slate-600">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">TS-Rate</label>
+                            <input type="text" id="input-ts-rate" placeholder="52.704Mbps" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] outline-none focus:border-accentBlue placeholder-slate-600">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="text-center pt-2">
-                    <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">④ 電界強度数値入力</label>
+                    <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">⑤ 電界強度数値入力</label>
                     <div class="flex items-center justify-center gap-3 my-3">
                         <button onclick="changeValue(-5)" class="w-11 h-11 bg-bgDark border border-borderStroke text-white text-sm font-black rounded-xl active:bg-slate-800 transition">-5</button>
                         <button onclick="changeValue(-1)" class="w-11 h-11 bg-bgDark border border-borderStroke text-white text-sm font-black rounded-xl active:bg-slate-800 transition">-1</button>
@@ -339,13 +342,10 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       VIEW 3: メンテナンス画面
-       =================================================== -->
+    <!-- VIEW 3: メンテナンス画面 -->
     <div id="view-maintenance" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- アカウント権限管理へのショートカット（管理者のみ踏める） -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex justify-between items-center">
                 <div>
                     <h3 class="text-xs font-black text-amber-400 uppercase tracking-wider"><i class="fas fa-users-cog mr-1"></i> ポジション別 アカウント権限管理</h3>
@@ -398,9 +398,7 @@
         </div>
     </div>
 
-    <!-- ===================================================
-       VIEW 4: ポジション別 アカウント権限管理画面 (管理者専用)
-       =================================================== -->
+    <!-- VIEW 4: ポジション別 アカウント権限管理画面 -->
     <div id="view-useradmin" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
@@ -418,7 +416,7 @@
         </div>
     </div>
 
-    <!-- 固定配置：ボトムナビ -->
+    <!-- ボトムナビゲーション -->
     <div class="bottom-nav fixed bottom-0 left-0 w-full h-[65px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,0px)]">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
             <span class="text-base"><i class="fas fa-chart-bar"></i></span>
@@ -432,6 +430,7 @@
             <span class="text-base"><i class="fas fa-tools"></i></span>
             <span class="text-[9px] font-bold">メンテナンス</span>
         </button>
+        <button id="nav-useradmin" class="hidden"></button>
     </div>
 
 <script>
@@ -447,7 +446,6 @@
     
     let sortableInstances = { main: null, relay: null, sub: null };
 
-    // 起動時に認証セッション確認
     window.addEventListener('load', async () => {
         if (!sb) return;
         const { data: { session } } = await sb.auth.getSession();
@@ -458,9 +456,6 @@
         }
     });
 
-    /* ===================================================
-       🔐 認証・ログイン・権限チェック制御
-       =================================================== */
     async function handleLogin() {
         if (!sb) return;
         const email = document.getElementById('login-email').value.trim();
@@ -483,11 +478,9 @@
     }
 
     async function syncUserRoleAndInit(userId, email) {
-        // 【強化修正】 admin@fpu.system の場合は最優先で admin 権限をロックオン
         if (email === 'admin@fpu.system') {
             currentUserRole = "admin";
             if (sb) {
-                // user_roles テーブル側にも確実に管理者としてUpsert同期を実行
                 await sb.from('user_roles').upsert({ id: userId, email: email, role: 'admin' }, { onConflict: 'id' });
             }
         } else {
@@ -501,7 +494,6 @@
             } catch(e) { currentUserRole = "staff"; }
         }
 
-        // UI表示の切り替え
         const badge = document.getElementById('user-role-badge');
         if(currentUserRole === 'admin') {
             if(badge) {
@@ -523,9 +515,6 @@
         fetchProgramsList();
     }
 
-    /* ===================================================
-       👥 管理者専用：全ユーザーアカウントの権限変更ロジック
-       =================================================== */
     async function loadUserRolesList() {
         if (!sb || currentUserRole !== 'admin') return;
         const box = document.getElementById('user-role-list-box');
@@ -575,9 +564,6 @@
         }
     }
 
-    /* ===================================================
-       📁 大会ファイルリスト読み込み制御
-       =================================================== */
     async function fetchProgramsList() {
         if (!sb) return;
         const statusEl = document.getElementById('system-status-msg');
@@ -733,10 +719,10 @@
             const btn = document.getElementById(`nav-${v}`);
             const content = document.getElementById(`view-${v}`);
             if (v === viewName) { 
-                if(btn) btn.classList.replace('text-slate-500', 'text-accentBlue'); 
+                if(btn && btn.classList.contains('text-slate-500')) btn.classList.replace('text-slate-500', 'text-accentBlue'); 
                 if(content) content.classList.add('active'); 
             } else { 
-                if(btn) btn.classList.replace('text-accentBlue', 'text-slate-500'); 
+                if(btn && btn.classList.contains('text-accentBlue')) btn.classList.replace('text-accentBlue', 'text-slate-500'); 
                 if(content) content.classList.remove('active'); 
             }
         });
@@ -785,7 +771,7 @@
 
             const { data: records, error: recErr } = await sb.from('records').select('*').eq('program_id', activeProgramId);
             if (!recErr && records) { 
-                records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel)); 
+                records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate)); 
             }
 
             sb.removeAllChannels();
@@ -793,7 +779,7 @@
                 const updated = payload.new || payload.old;
                 if (updated && updated.program_id === activeProgramId) { 
                     if (payload.eventType === 'DELETE') { updateCellSkeleton(updated.link_id, updated.phase); } 
-                    else { updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, true); }
+                    else { updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, true); }
                 }
             }).subscribe();
 
@@ -812,7 +798,8 @@
         }
     }
 
-    function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, isLive = false) {
+    // 【機能拡張】変調方式・プリセット・TSレートを電界の横に綺麗に並べるレンダリング処理
+    function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
         const cell = row.querySelector(`.phase-${phase}`);
@@ -832,14 +819,26 @@
         if (fMemo) memoHtml += `<div class="text-[11px] text-emerald-400 font-bold truncate leading-tight">現:${fMemo}</div>`;
         if (cMemo) memoHtml += `<div class="text-[11px] text-accentBlue font-bold truncate leading-tight">セ:${cMemo}</div>`;
 
+        // 縦並びのスマートスペックバッジHTMLの生成
+        let specsHtml = `
+            <div class="flex flex-col gap-0.5 text-[9px] text-slate-400 border-l border-slate-700/60 pl-2 ml-2 font-mono text-left shrink-0">
+                <div class="truncate"><span class="text-slate-600 font-sans font-bold">変調:</span>${modType || '--'}</div>
+                <div class="truncate"><span class="text-slate-600 font-sans font-bold">PＳ:</span>${presetType || '--'}</div>
+                <div class="truncate"><span class="text-slate-600 font-sans font-bold">ＴＳ:</span>${tsRate || '--'}</div>
+            </div>
+        `;
+
         cell.innerHTML = `
             <div class="cell-box ${bgStyle} border rounded-xl p-2 min-h-[78px] flex flex-col justify-between transition-all shadow-sm">
                 <div class="w-full flex-1 flex items-center justify-center py-1">
-                    <div class="flex items-center justify-center">
-                        ${chDisplayHtml}
-                        <div class="${statusColor} text-2xl font-mono font-black tracking-tighter flex items-baseline justify-center">
-                            ${value}<span class="text-[10px] font-sans font-black ml-0.5 opacity-80">dB</span>
+                    <div class="flex items-center justify-between w-full px-1">
+                        <div class="flex items-center justify-center flex-1">
+                            ${chDisplayHtml}
+                            <div class="${statusColor} text-2xl font-mono font-black tracking-tighter flex items-baseline justify-center">
+                                ${value}<span class="text-[10px] font-sans font-black ml-0.5 opacity-80">dB</span>
+                            </div>
                         </div>
+                        ${specsHtml}
                     </div>
                 </div>
                 <div class="space-y-0.5 text-left w-full border-t border-slate-800/20 pt-1 mt-auto">
@@ -874,13 +873,16 @@
         statusEl.innerText = "⚡ 送信中...";
         statusEl.className = "text-[11px] font-bold text-slate-400";
 
-        const { data: currentRec } = await sb.from('records').select('value, field_memo, fpu_channel').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
+        const { data: currentRec } = await sb.from('records').select('value, field_memo, fpu_channel, mod_type, preset_type, ts_rate').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
         const existingVal = currentRec ? currentRec.value : 60;
         const existingFieldMemo = currentRec ? currentRec.field_memo : "";
         const finalCh = fpuCh ? fpuCh : (currentRec ? currentRec.fpu_channel : "");
+        const finalMod = currentRec ? currentRec.mod_type : "";
+        const finalPreset = currentRec ? currentRec.preset_type : "";
+        const finalTs = currentRec ? currentRec.ts_rate : "";
 
         const { error } = await sb.from('records').upsert({
-            program_id: activeProgramId, link_id: linkId, phase: phase, value: existingVal, field_memo: existingFieldMemo, center_memo: cMemo, fpu_channel: finalCh
+            program_id: activeProgramId, link_id: linkId, phase: phase, value: existingVal, field_memo: existingFieldMemo, center_memo: cMemo, fpu_channel: finalCh, mod_type: finalMod, preset_type: finalPreset, ts_rate: finalTs
         }, { onConflict: 'program_id,link_id,phase' });
 
         if (error) { statusEl.innerText = "⚠️ 更新失敗: " + error.message; } 
@@ -934,15 +936,25 @@
         const phase = document.getElementById('phase-select').value;
         if (!activeProgramId || !linkId || !phase) return;
 
-        const { data } = await sb.from('records').select('value, field_memo, center_memo, fpu_channel').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
+        const { data } = await sb.from('records').select('value, field_memo, center_memo, fpu_channel, mod_type, preset_type, ts_rate').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
         if (data) { 
             currentVal = data.value !== null ? parseInt(data.value, 10) : 60;
             document.getElementById('input-field-memo').value = data.field_memo || "";
             document.getElementById('input-center-memo').value = data.center_memo || "";
             if (data.fpu_channel) document.getElementById('channel-custom-input').value = data.fpu_channel;
+            
+            // 入力欄に値を復元
+            document.getElementById('input-mod-type').value = data.mod_type || "";
+            document.getElementById('input-preset-type').value = data.preset_type || "";
+            document.getElementById('input-ts-rate').value = data.ts_rate || "";
         } else { 
-            currentVal = 60; document.getElementById('input-field-memo').value = ""; document.getElementById('input-center-memo').value = "";
+            currentVal = 60; 
+            document.getElementById('input-field-memo').value = ""; 
+            document.getElementById('input-center-memo').value = "";
             document.getElementById('channel-custom-input').value = "";
+            document.getElementById('input-mod-type').value = "";
+            document.getElementById('input-preset-type').value = "";
+            document.getElementById('input-ts-rate').value = "";
         }
         document.getElementById('db-value').innerText = currentVal;
     }
@@ -956,13 +968,29 @@
         const fpuCh = document.getElementById('channel-custom-input').value.trim();
         const fMemo = document.getElementById('input-field-memo').value.trim();
         const cMemo = document.getElementById('input-center-memo').value.trim();
-        const msgEl = document.getElementById('status-msg');
+        
+        // 新規パラメータの値を取得
+        const modType = document.getElementById('input-mod-type').value.trim();
+        const presetType = document.getElementById('input-preset-type').value.trim();
+        const tsRate = document.getElementById('input-ts-rate').value.trim();
 
+        const msgEl = document.getElementById('status-msg');
         msgEl.innerText = "⚡ TRANSMITTING...";
         msgEl.className = "text-slate-400 text-[10px] font-mono tracking-wider text-center animate-pulse";
 
         const { error } = await sb.from('records').upsert(
-            { program_id: activeProgramId, link_id: linkId, phase: phase, value: parseInt(currentVal, 10), field_memo: fMemo, center_memo: cMemo, fpu_channel: fpuCh }, 
+            { 
+                program_id: activeProgramId, 
+                link_id: linkId, 
+                phase: phase, 
+                value: parseInt(currentVal, 10), 
+                field_memo: fMemo, 
+                center_memo: cMemo, 
+                fpu_channel: fpuCh,
+                mod_type: modType,
+                preset_type: presetType,
+                ts_rate: tsRate
+            }, 
             { onConflict: 'program_id,link_id,phase' }
         );
         if (error) { msgEl.innerText = "⚠️ ERROR: " + error.message; } 
