@@ -82,7 +82,6 @@
 
     <div id="welcome-view" class="fixed inset-0 bg-bgDark z-40 flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90dvh]">
-            
             <div class="flex justify-between items-center mb-6 shrink-0">
                 <h2 class="text-base font-black text-white flex items-center gap-2">
                     <i class="fas fa-folder-open text-accentBlue"></i> 大会ファイルを選択
@@ -91,13 +90,10 @@
                     <i class="fas fa-plus mr-1"></i> 新規作成
                 </button>
             </div>
-            
             <div id="program-list-box" class="overflow-y-auto space-y-3 no-scrollbar flex-1 pr-1">
                 <div class="text-xs text-slate-500 font-mono text-center py-4">番組ファイルを読込中...</div>
             </div>
-
             <div id="system-status-msg" class="text-rose-400 text-[11px] font-bold text-center mt-3 empty:hidden bg-rose-950/20 border border-rose-500/30 p-2 rounded-xl"></div>
-            
             <button onclick="handleLogout()" class="mt-4 border border-borderStroke text-slate-500 font-bold text-xs py-2 rounded-xl hover:text-rose-400 transition shrink-0 text-center">
                 <i class="fas fa-sign-out-alt mr-1"></i> アカウントサインアウト
             </button>
@@ -106,17 +102,15 @@
 
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
-            <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
-                <i class="fas fa-plus-circle"></i> 新しい中継番組・大会の作成
-            </h3>
+            <h3 class="text-sm font-black text-accentBlue flex items-center gap-2"><i class="fas fa-plus-circle"></i> 新しい中継番組・大会の作成</h3>
             <div class="space-y-3">
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID / Program ID (半角英数字)</label>
-                    <input type="text" id="new-program-id" placeholder="例: ekiden-2026" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                    <input type="text" id="new-program-id" placeholder="例: ekiden-2026" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all font-mono">
                 </div>
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称 / Tournament Title</label>
-                    <input type="text" id="new-program-title" placeholder="例: 全日本大学駅伝2026" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                    <input type="text" id="new-program-title" placeholder="例: 全日本大学駅伝2026" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all">
                 </div>
             </div>
             <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
@@ -128,17 +122,15 @@
 
     <div id="edit-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
-            <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
-                <i class="fas fa-edit"></i> 番組設定の編集
-            </h3>
+            <h3 class="text-sm font-black text-accentBlue flex items-center gap-2"><i class="fas fa-edit"></i> 番組設定の編集</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID / Program ID (半角英数字)</label>
-                    <input type="text" id="edit-program-id" placeholder="新しい番組IDを入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID / Program ID</label>
+                    <input type="text" id="edit-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all font-mono">
                 </div>
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称</label>
-                    <input type="text" id="edit-program-title" placeholder="新しい番組名を入力" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                    <input type="text" id="edit-program-title" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all">
                 </div>
             </div>
             <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
@@ -150,17 +142,15 @@
 
     <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
-            <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
-                <i class="fas fa-copy"></i> 番組ファイルの複製 (コピー)
-            </h3>
+            <h3 class="text-sm font-black text-amber-400 flex items-center gap-2"><i class="fas fa-copy"></i> 番組ファイルの複製 (コピー)</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組ID (半角英数字)</label>
-                    <input type="text" id="dup-program-id" placeholder="例: ekiden-2026-day2" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                    <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組ID</label>
+                    <input type="text" id="dup-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all font-mono">
                 </div>
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">新しい番組名・大会名称</label>
-                    <input type="text" id="dup-program-title" placeholder="例: 全日本大学駅伝2026(2日目)" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                    <input type="text" id="dup-program-title" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all">
                 </div>
             </div>
             <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
@@ -173,12 +163,10 @@
     <div class="app-header sticky top-0 z-30 bg-cardBg/90 backdrop-blur-md px-5 py-4 border-b border-borderStroke flex justify-between items-center">
         <div class="flex items-center gap-2 max-w-[50%] min-w-0">
             <div id="active-program-display" class="text-base font-black text-accentBlue truncate">番組未選択</div>
-            <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition" title="番組情報を編集">
-                <i class="fas fa-edit"></i>
-            </button>
+            <button onclick="openEditProgramModalFromHeader()" id="btn-edit-program" class="hidden text-slate-500 hover:text-accentBlue text-xs p-1 transition"><i class="fas fa-edit"></i></button>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="location.reload()" class="text-[10px] bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition">大会変更</button>
+            <button onclick="location.reload()" class="text-[10px] bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md transition">大会変更</button>
             <div id="user-role-badge" class="text-[9px] font-mono font-black px-2 py-1 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
         </div>
     </div>
@@ -199,9 +187,7 @@
                     </select>
                     <input type="text" id="dash-channel-input" placeholder="Ch (例: C2H)" class="bg-bgDark border border-borderStroke rounded-xl px-3 py-2 text-amber-400 text-xs font-black outline-none focus:border-accentBlue uppercase placeholder-slate-600 w-[90px]">
                     <input type="text" id="dash-center-memo" placeholder="状況メモを入力" class="flex-1 bg-bgDark border border-borderStroke rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-accentBlue placeholder-slate-600 transition-all min-w-[150px]">
-                    <button onclick="submitDashCenterMemo()" class="bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs px-4 rounded-xl transition flex items-center gap-1 shrink-0 ml-auto md:ml-0">
-                        <i class="fas fa-paper-plane"></i> 更新
-                    </button>
+                    <button onclick="submitDashCenterMemo()" class="bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs px-4 rounded-xl transition flex items-center gap-1 shrink-0 ml-auto md:ml-0"><i class="fas fa-paper-plane"></i> 更新</button>
                 </div>
             </div>
             <div id="dash-memo-status" class="text-[10px] font-bold text-accentGreen mt-1 empty:hidden"></div>
@@ -209,38 +195,31 @@
 
         <div class="grid grid-cols-1 gap-6">
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
-                <h2 class="text-base font-black text-accentBlue border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
-                    <i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)
-                </h2>
-                <table class="w-full text-center text-xs min-w-[650px]">
-                    <thead><tr class="text-[11px] text-slate-400 font-bold tracking-wider"><th class="text-left pb-2 w-[24%] text-sm">対象回線</th><th class="w-[19%] pb-2">技術</th><th class="w-[19%] pb-2">走行</th><th class="w-[19%] pb-2">リハ</th><th class="w-[19%] pb-2 text-accentBlue font-black">本番</th></tr></thead>
+                <h2 class="text-base font-black text-accentBlue border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0"><i class="fas fa-broadcast-tower"></i> 本線基幹ルート (親局直受)</h2>
+                <table class="w-full text-center text-xs min-w-[700px]">
+                    <thead><tr class="text-[11px] text-slate-400 font-bold tracking-wider"><th class="text-left pb-2 w-[22%] text-sm">対象回線</th><th class="w-[19.5%] pb-2">技術</th><th class="w-[19.5%] pb-2">走行</th><th class="w-[19.5%] pb-2">リハ</th><th class="w-[19.5%] pb-2 text-accentBlue font-black">本番</th></tr></thead>
                     <tbody id="group-main" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
 
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
-                <h2 class="text-base font-black text-accentOrange border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
-                    <i class="fas fa-route"></i> 中継所リレーリンク
-                </h2>
-                <table class="w-full text-center text-xs min-w-[650px]">
-                    <thead><tr class="text-[11px] text-slate-400 font-bold tracking-wider"><th class="text-left pb-2 w-[24%] text-sm">対象回線</th><th class="w-[19%] pb-2">技術</th><th class="w-[19%] pb-2">走行</th><th class="w-[19%] pb-2">リハ</th><th class="w-[19%] pb-2 text-accentOrange font-black">本番</th></tr></thead>
+                <h2 class="text-base font-black text-accentOrange border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0"><i class="fas fa-route"></i> 中継所リレーリンク</h2>
+                <table class="w-full text-center text-xs min-w-[700px]">
+                    <thead><tr class="text-[11px] text-slate-400 font-bold tracking-wider"><th class="text-left pb-2 w-[22%] text-sm">対象回線</th><th class="w-[19.5%] pb-2">技術</th><th class="w-[19.5%] pb-2">走行</th><th class="w-[19.5%] pb-2">リハ</th><th class="w-[19.5%] pb-2 text-accentOrange font-black">本番</th></tr></thead>
                     <tbody id="group-relay" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
 
             <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl overflow-x-auto no-scrollbar">
-                <h2 class="text-base font-black text-slate-300 border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0">
-                    <i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統
-                </h2>
-                <table class="w-full text-center text-xs min-w-[650px]">
-                    <thead><tr class="text-[11px] text-slate-400 font-bold tracking-wider"><th class="text-left pb-2 w-[24%] text-sm">対象回線</th><th class="w-[19%] pb-2">技術</th><th class="w-[19%] pb-2">走行</th><th class="w-[19%] pb-2">リハ</th><th class="w-[19%] pb-2 text-slate-300 font-black">本番</th></tr></thead>
+                <h2 class="text-base font-black text-slate-300 border-b border-borderStroke/60 pb-3 mb-4 flex items-center gap-2 sticky left-0"><i class="fas fa-shield-alt"></i> 予備・特設・ヘリ系統</h2>
+                <table class="w-full text-center text-xs min-w-[700px]">
+                    <thead><tr class="text-[11px] text-slate-400 font-bold tracking-wider"><th class="text-left pb-2 w-[22%] text-sm">対象回線</th><th class="w-[19.5%] pb-2">技術</th><th class="w-[19.5%] pb-2">走行</th><th class="w-[19.5%] pb-2">リハ</th><th class="w-[19.5%] pb-2 text-slate-300 font-black">本番</th></tr></thead>
                     <tbody id="group-sub" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- VIEW 2: 現場入力画面 -->
     <div id="view-input" class="view-content p-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
@@ -250,12 +229,12 @@
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">① 対象回線 (リンク)</label>
-                    <select id="link-select" onchange="saveInputState(); fetchCurrentRecord();" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue appearance-none font-bold"></select>
+                    <select id="link-select" onchange="saveInputState(); fetchCurrentRecord();" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-bold"></select>
                 </div>
 
                 <div>
                     <label class="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">② 現在のフェーズ (日程)</label>
-                    <select id="phase-select" onchange="saveInputState(); fetchCurrentRecord();" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue appearance-none font-bold">
+                    <select id="phase-select" onchange="saveInputState(); fetchCurrentRecord();" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-bold">
                         <option value="tech">技術テスト</option>
                         <option value="run">走行テスト</option>
                         <option value="rehe">リハーサル</option>
@@ -283,9 +262,8 @@
                     </div>
                 </div>
 
-                <!-- 【機能改修】自由入力から安全な「プルダウン選択方式」へ変更 -->
                 <div class="pt-2 border-t border-borderStroke/40 space-y-2">
-                    <label class="block text-[10px] text-accentBlue font-bold uppercase tracking-wider">④ 回線スペックパラメータ (選択方式)</label>
+                    <label class="block text-[10px] text-accentBlue font-bold uppercase tracking-wider">④ 回線スペック＆機器パラメータ</label>
                     <div class="grid grid-cols-3 gap-2">
                         <div>
                             <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">変調方式</label>
@@ -326,6 +304,17 @@
                             </select>
                         </div>
                     </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">送信機型番 (TX)</label>
+                            <input type="text" id="input-tx-model" placeholder="例: PF-900" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] font-bold outline-none focus:border-accentBlue placeholder-slate-700">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-slate-400 mb-0.5 font-bold">受信機型番 (RX)</label>
+                            <input type="text" id="input-rx-model" placeholder="例: FR-800" class="w-full bg-bgDark border border-borderStroke rounded-lg px-2 py-2 text-white text-[11px] font-bold outline-none focus:border-accentBlue placeholder-slate-700">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="text-center pt-2">
@@ -344,35 +333,30 @@
                 <div class="space-y-2 pt-1 border-t border-borderStroke/40">
                     <div>
                         <label class="block text-[10px] text-emerald-400 font-bold uppercase mb-1">現場メモ / Field Memo</label>
-                        <input type="text" id="input-field-memo" placeholder="例: アンテナ追尾完了、安定" class="w-full bg-bgDark border border-borderStroke rounded-xl px-3 py-2.5 text-white text-xs outline-none focus:border-accentGreen placeholder-slate-600 block transition-all">
+                        <input type="text" id="input-field-memo" placeholder="例: アンテナ追尾完了、安定" class="w-full bg-bgDark border border-borderStroke rounded-xl px-3 py-2.5 text-white text-xs outline-none focus:border-accentGreen placeholder-slate-600 transition-all">
                     </div>
                     <div>
                         <label class="block text-[10px] text-accentBlue font-bold uppercase mb-1">センターメモ / Center Memo</label>
-                        <input type="text" id="input-center-memo" placeholder="例: センター側DAdown確認" class="w-full bg-bgDark border border-borderStroke rounded-xl px-3 py-2.5 text-white text-xs outline-none focus:border-accentBlue placeholder-slate-600 block transition-all">
+                        <input type="text" id="input-center-memo" placeholder="例: センター側DAdown確認" class="w-full bg-bgDark border border-borderStroke rounded-xl px-3 py-2.5 text-white text-xs outline-none focus:border-accentBlue placeholder-slate-600 transition-all">
                     </div>
                 </div>
 
-                <button onclick="submitToSupabase()" id="btnSubmit" class="w-full bg-accentGreen hover:bg-emerald-600 text-bgDark font-black text-sm py-3 rounded-xl transition active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 mt-2">
-                    <i class="fas fa-cloud-upload-alt"></i> データとCh情報を送信
+                <button onclick="submitToSupabase()" id="btnSubmit" class="w-full bg-accentGreen hover:bg-emerald-600 text-bgDark font-black text-sm py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2 mt-2">
+                    <i class="fas fa-cloud-upload-alt"></i> データと機器情報を送信
                 </button>
-                
                 <div id="status-msg" class="text-center text-[11px] font-bold min-height-[20px] pt-1"></div>
             </div>
         </div>
     </div>
 
-    <!-- VIEW 3: メンテナンス画面 -->
     <div id="view-maintenance" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
-            
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex justify-between items-center">
                 <div>
                     <h3 class="text-xs font-black text-amber-400 uppercase tracking-wider"><i class="fas fa-users-cog mr-1"></i> ポジション別 アカウント権限管理</h3>
                     <p class="text-[10px] text-slate-400 font-bold mt-0.5">現場各ポジションの権限をアプリ内で動的に変更します。</p>
                 </div>
-                <button onclick="switchView('useradmin')" class="bg-amber-400 hover:bg-amber-500 text-bgDark font-black text-xs px-4 py-2.5 rounded-xl transition shrink-0 ml-2">
-                    管理画面へ
-                </button>
+                <button onclick="switchView('useradmin')" class="bg-amber-400 hover:bg-amber-500 text-bgDark font-black text-xs px-4 py-2.5 rounded-xl transition shrink-0 ml-2">管理画面へ</button>
             </div>
 
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
@@ -386,49 +370,38 @@
                     </div>
                     <div>
                         <label class="block text-[10px] text-slate-400 mb-1 font-bold">ブロックカテゴリ / Category</label>
-                        <select id="link-category" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-bold appearance-none">
+                        <select id="link-category" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-bold">
                             <option value="main">本線局直受 (main)</option>
                             <option value="relay">中継所リレー (relay)</option>
                             <option value="sub">予備・特設・ヘリ局 (sub)</option>
                         </select>
                     </div>
-                    <button onclick="submitNewLink()" class="w-full bg-accentGreen hover:bg-emerald-600 text-bgDark font-black text-sm py-3 rounded-xl transition active:scale-[0.98] shadow-lg flex items-center justify-center gap-2">
-                        <i class="fas fa-save"></i> この大会に受信点を追加
-                    </button>
+                    <button onclick="submitNewLink()" class="w-full bg-accentGreen hover:bg-emerald-600 text-bgDark font-black text-sm py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2"><i class="fas fa-save"></i> この大会に受信点を追加</button>
                 </div>
             </div>
 
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <div class="border-b border-borderStroke/60 pb-3">
-                    <h2 class="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fas fa-sort-amount-down text-accentBlue"></i> グループ別・ドラッグ並び替え
-                    </h2>
+                    <h2 class="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-2"><i class="fas fa-sort-amount-down text-accentBlue"></i> グループ別・ドラッグ並び替え</h2>
                 </div>
                 <div class="space-y-1.5"><div class="text-[11px] font-black text-accentBlue uppercase"><i class="fas fa-broadcast-tower mr-1"></i>本線順序</div><div id="maint-box-main" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div></div>
                 <div class="space-y-1.5 pt-2"><div class="text-[11px] font-black text-accentOrange uppercase"><i class="fas fa-route mr-1"></i>リレー順序</div><div id="maint-box-relay" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div></div>
                 <div class="space-y-1.5 pt-2"><div class="text-[11px] font-black text-slate-400 uppercase"><i class="fas fa-shield-alt mr-1"></i>予備系統順序</div><div id="maint-box-sub" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/30"></div></div>
                 <div class="pt-2 border-t border-borderStroke/60">
-                    <button onclick="saveGroupedOrder()" class="w-full bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs py-3 rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
-                        <i class="fas fa-check-circle"></i> 全グループの並び順を確定して適用
-                    </button>
+                    <button onclick="saveGroupedOrder()" class="w-full bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs py-3 rounded-xl transition shadow-md flex items-center justify-center gap-1.5"><i class="fas fa-check-circle"></i> 全グループの並び順を確定して適用</button>
                     <div id="order-status-msg" class="text-[10px] font-bold text-center mt-1.5 empty:hidden"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- VIEW 4: ポジション別 アカウント権限管理画面 -->
     <div id="view-useradmin" class="view-content p-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <div class="flex items-center justify-between border-b border-borderStroke/60 pb-3">
-                <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
-                    <i class="fas fa-users-cog"></i> ユーザーアカウント権限変更
-                </h2>
+                <h2 class="text-sm font-black text-amber-400 flex items-center gap-2"><i class="fas fa-users-cog"></i> ユーザーアカウント権限変更</h2>
                 <button onclick="switchView('maintenance')" class="text-[10px] font-bold text-slate-400 border border-borderStroke px-2 py-1 rounded-md">戻る</button>
             </div>
-            
-            <p class="text-[10px] text-slate-400 font-bold leading-relaxed">登録されているポジション別アカウントのトグルスイッチを切り替えるだけで、即座に現場権限（ファイル削除や並べ替え可否）が反映されます。</p>
-            
+            <p class="text-[10px] text-slate-400 font-bold leading-relaxed">ポジション別アカウントのトグルスイッチの切り替えで、現場権限がリアルタイムで反映されます。</p>
             <div id="user-role-list-box" class="space-y-3 pt-2">
                 <div class="text-xs text-slate-500 font-mono text-center py-4">ユーザーアカウント一覧を読込中...</div>
             </div>
@@ -504,11 +477,7 @@
         } else {
             try {
                 const { data, error } = await sb.from('user_roles').select('role').eq('id', userId).maybeSingle();
-                if(!error && data) {
-                    currentUserRole = data.role;
-                } else {
-                    currentUserRole = "staff";
-                }
+                if(!error && data) { currentUserRole = data.role; } else { currentUserRole = "staff"; }
             } catch(e) { currentUserRole = "staff"; }
         }
 
@@ -548,7 +517,7 @@
                     return `
                         <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex justify-between items-center">
                             <div class="truncate pr-2 text-left">
-                                <div class="text-xs font-bold text-slate-200 truncate font-sans font-mono">${u.email}</div>
+                                <div class="text-xs font-bold text-slate-200 truncate font-mono">${u.email}</div>
                                 <div class="text-[9px] font-mono mt-0.5 text-slate-500">UID: ${u.id.substring(0,8)}...</div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -558,15 +527,10 @@
                                     <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-checked:after:bg-bgDark"></div>
                                 </label>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
-            } else {
-                box.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-4">ユーザーがいません</div>';
-            }
-        } catch(e) {
-            box.innerHTML = `<div class="text-xs text-rose-400 font-bold text-center py-4">読み込みエラー: ${e.message}</div>`;
-        }
+            } else { box.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-4">ユーザーがいません</div>'; }
+        } catch(e) { box.innerHTML = `<div class="text-xs text-rose-400 font-bold text-center py-4">読み込みエラー: ${e.message}</div>`; }
     }
 
     async function toggleUserRole(targetUid, isChecked) {
@@ -576,10 +540,7 @@
             const { error } = await sb.from('user_roles').update({ role: targetRole }).eq('id', targetUid);
             if (error) throw error;
             loadUserRolesList();
-        } catch(e) {
-            alert("権限の変更に失敗しました: " + e.message);
-            loadUserRolesList();
-        }
+        } catch(e) { alert("権限の変更に失敗しました: " + e.message); loadUserRolesList(); }
     }
 
     async function fetchProgramsList() {
@@ -595,9 +556,9 @@
                     let actionButtons = "";
                     if (currentUserRole === 'admin') {
                         actionButtons = `
-                            <button onclick="openDuplicateModal('${p.id}', '${p.title}')" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="このファイルを複製"><i class="fas fa-copy"></i></button>
-                            <button onclick="openEditProgramModalFromList('${p.id}', '${p.title}')" class="text-slate-400 hover:text-accentBlue text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="この設定を編集"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteProgramEntirely('${p.id}', '${p.title}')" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition" title="この大会ファイルを完全に削除"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="openDuplicateModal('${p.id}', '${p.title}')" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition"><i class="fas fa-copy"></i></button>
+                            <button onclick="openEditProgramModalFromList('${p.id}', '${p.title}')" class="text-slate-400 hover:text-accentBlue text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteProgramEntirely('${p.id}', '${p.title}')" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md border border-slate-700 transition"><i class="fas fa-trash-alt"></i></button>
                         `;
                     }
                     return `
@@ -610,8 +571,7 @@
                                 ${actionButtons}
                                 <button onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="text-[10px] font-bold bg-slate-800 text-amber-400 px-3 py-2 rounded-md border border-slate-700 hover:border-amber-400 transition">接続</button>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
             } else { listBox.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-6">ファイルがありません。</div>'; }
         } catch (err) { statusEl.innerText = `⚠️ 接続失敗: ${err.message}`; }
@@ -650,8 +610,6 @@
     }
     function closeEditProgramModal() {
         document.getElementById('edit-program-modal').classList.replace('flex', 'hidden');
-        document.getElementById('edit-program-id').value = '';
-        document.getElementById('edit-program-title').value = '';
         editingTargetId = "";
     }
 
@@ -789,7 +747,7 @@
 
             const { data: records, error: recErr } = await sb.from('records').select('*').eq('program_id', activeProgramId);
             if (!recErr && records) { 
-                records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate)); 
+                records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model)); 
             }
 
             sb.removeAllChannels();
@@ -797,7 +755,7 @@
                 const updated = payload.new || payload.old;
                 if (updated && updated.program_id === activeProgramId) { 
                     if (payload.eventType === 'DELETE') { updateCellSkeleton(updated.link_id, updated.phase); } 
-                    else { updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, true); }
+                    else { updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); }
                 }
             }).subscribe();
 
@@ -816,8 +774,8 @@
         }
     }
 
-    // 🌟【ダッシュボード視認性超絶強化】文字拡大・高コントラスト配色へ変更
-    function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, isLive = false) {
+    // 🌟【TX/RX型番追加版】ダッシュボードセル描画ロジック
+    function updateCell(linkId, phase, value, fMemo, cMemo, fpuChannel, modType, presetType, tsRate, txModel, rxModel, isLive = false) {
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
         const cell = row.querySelector(`.phase-${phase}`);
@@ -837,12 +795,14 @@
         if (fMemo) memoHtml += `<div class="text-[11px] text-emerald-400 font-bold truncate leading-tight">現:${fMemo}</div>`;
         if (cMemo) memoHtml += `<div class="text-[11px] text-accentBlue font-bold truncate leading-tight">セ:${cMemo}</div>`;
 
-        // 🚀 文字を大きく・太く・色をメリハリのある高コントラストデザインに改修
+        // 🚀 送信機 (TX) / 受信機 (RX) の型番項目を追加し、横幅を120pxに最適化
         let specsHtml = `
-            <div class="flex flex-col gap-1 text-[11px] text-slate-200 border-l-2 border-slate-700/80 pl-2.5 ml-2 font-mono font-black text-left shrink-0 bg-slate-950/40 p-1 rounded-r-lg min-w-[95px]">
+            <div class="flex flex-col gap-0.5 text-[11px] text-slate-200 border-l-2 border-slate-700/80 pl-2.5 ml-2 font-mono font-black text-left shrink-0 bg-slate-950/40 p-1 rounded-r-lg min-w-[120px]">
                 <div class="truncate flex items-center justify-between"><span class="text-pink-400 text-[10px] font-sans mr-1">変調:</span>${modType || '--'}</div>
                 <div class="truncate flex items-center justify-between"><span class="text-amber-400 text-[10px] font-sans mr-1">ＰＳ:</span>${presetType || '--'}</div>
                 <div class="truncate flex items-center justify-between"><span class="text-sky-400 text-[10px] font-sans mr-1">ＴＳ:</span>${tsRate ? tsRate.replace('Mbps','') : '--'}</div>
+                <div class="truncate flex items-center justify-between border-t border-slate-800/60 mt-0.5 pt-0.5"><span class="text-slate-400 text-[10px] font-sans mr-1">ＴＸ:</span>${txModel || '--'}</div>
+                <div class="truncate flex items-center justify-between"><span class="text-slate-400 text-[10px] font-sans mr-1">ＲＸ:</span>${rxModel || '--'}</div>
             </div>
         `;
 
@@ -891,16 +851,18 @@
         statusEl.innerText = "⚡ 送信中...";
         statusEl.className = "text-[11px] font-bold text-slate-400";
 
-        const { data: currentRec } = await sb.from('records').select('value, field_memo, fpu_channel, mod_type, preset_type, ts_rate').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
+        const { data: currentRec } = await sb.from('records').select('value, field_memo, fpu_channel, mod_type, preset_type, ts_rate, tx_model, rx_model').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
         const existingVal = currentRec ? currentRec.value : 60;
         const existingFieldMemo = currentRec ? currentRec.field_memo : "";
         const finalCh = fpuCh ? fpuCh : (currentRec ? currentRec.fpu_channel : "");
         const finalMod = currentRec ? currentRec.mod_type : "";
         const finalPreset = currentRec ? currentRec.preset_type : "";
         const finalTs = currentRec ? currentRec.ts_rate : "";
+        const finalTx = currentRec ? currentRec.tx_model : "";
+        const finalRx = currentRec ? currentRec.rx_model : "";
 
         const { error } = await sb.from('records').upsert({
-            program_id: activeProgramId, link_id: linkId, phase: phase, value: existingVal, field_memo: existingFieldMemo, center_memo: cMemo, fpu_channel: finalCh, mod_type: finalMod, preset_type: finalPreset, ts_rate: finalTs
+            program_id: activeProgramId, link_id: linkId, phase: phase, value: existingVal, field_memo: existingFieldMemo, center_memo: cMemo, fpu_channel: finalCh, mod_type: finalMod, preset_type: finalPreset, ts_rate: finalTs, tx_model: finalTx, rx_model: finalRx
         }, { onConflict: 'program_id,link_id,phase' });
 
         if (error) { statusEl.innerText = "⚠️ 更新失敗: " + error.message; } 
@@ -954,17 +916,18 @@
         const phase = document.getElementById('phase-select').value;
         if (!activeProgramId || !linkId || !phase) return;
 
-        const { data } = await sb.from('records').select('value, field_memo, center_memo, fpu_channel, mod_type, preset_type, ts_rate').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
+        const { data } = await sb.from('records').select('value, field_memo, center_memo, fpu_channel, mod_type, preset_type, ts_rate, tx_model, rx_model').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
         if (data) { 
             currentVal = data.value !== null ? parseInt(data.value, 10) : 60;
             document.getElementById('input-field-memo').value = data.field_memo || "";
             document.getElementById('input-center-memo').value = data.center_memo || "";
             if (data.fpu_channel) document.getElementById('channel-custom-input').value = data.fpu_channel;
             
-            // 選択値を反映
             document.getElementById('input-mod-type').value = data.mod_type || "";
             document.getElementById('input-preset-type').value = data.preset_type || "";
             document.getElementById('input-ts-rate').value = data.ts_rate || "";
+            document.getElementById('input-tx-model').value = data.tx_model || "";
+            document.getElementById('input-rx-model').value = data.rx_model || "";
         } else { 
             currentVal = 60; 
             document.getElementById('input-field-memo').value = ""; 
@@ -973,6 +936,8 @@
             document.getElementById('input-mod-type').value = "";
             document.getElementById('input-preset-type').value = "";
             document.getElementById('input-ts-rate').value = "";
+            document.getElementById('input-tx-model').value = "";
+            document.getElementById('input-rx-model').value = "";
         }
         document.getElementById('db-value').innerText = currentVal;
     }
@@ -990,6 +955,8 @@
         const modType = document.getElementById('input-mod-type').value;
         const presetType = document.getElementById('input-preset-type').value;
         const tsRate = document.getElementById('input-ts-rate').value;
+        const txModel = document.getElementById('input-tx-model').value.trim();
+        const rxModel = document.getElementById('input-rx-model').value.trim();
 
         const msgEl = document.getElementById('status-msg');
         msgEl.innerText = "⚡ TRANSMITTING...";
@@ -1006,7 +973,9 @@
                 fpu_channel: fpuCh,
                 mod_type: modType,
                 preset_type: presetType,
-                ts_rate: tsRate
+                ts_rate: tsRate,
+                tx_model: txModel,
+                rx_model: rxModel
             }, 
             { onConflict: 'program_id,link_id,phase' }
         );
