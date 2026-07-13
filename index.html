@@ -195,7 +195,7 @@
 <body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
     <!-- ===================================================
-        🔐 ログインビュー
+       🔐 ログインビュー
        =================================================== -->
     <div id="login-view" class="fixed inset-0 bg-bgDark z-[2000] flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
@@ -798,20 +798,45 @@
             }
         }
 
+        // ⚡ 【リアルタイム更新の超コア修正】
         sb.removeAllChannels();
-        sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-            console.log("リアルタイム変更をキャッチ:", payload);
-            const updated = payload.new || payload.old;
-            if (updated && updated.program_id === activeProgramId) { 
+        sb.channel('live-records-filter')
+        .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'records' 
+        }, payload => {
+            console.log("リアルタイムイベント受信成功:", payload);
+            
+            // INSERT, UPDATE, もしくはマニュアル上書きを全キャッチ
+            const updated = payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old;
+            if (!updated) return;
+
+            // 🚨 最重要：大会IDの厳密型比較を排除（Stringキャストで完全一致を保証）
+            if (String(updated.program_id) === String(activeProgramId)) { 
                 if (payload.eventType === 'DELETE') { 
                     updateCellSkeleton(updated.link_id, updated.phase); 
                 } else { 
-                    // 🚨 ここで確実に第11引数に「true」を流し込み、他端末からのリアルタイム描画を強制更新します
-                    updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
+                    // 🚨 データベースが上書きを検知した瞬間に、描画対象のセルへピンポイントに強制描画
+                    updateCell(
+                        updated.link_id, 
+                        updated.phase, 
+                        updated.value !== null ? parseInt(updated.value, 10) : NaN, 
+                        updated.field_memo || "", 
+                        updated.center_memo || "", 
+                        updated.fpu_channel || "", 
+                        updated.mod_type || "", 
+                        updated.preset_type || "", 
+                        updated.ts_rate || "", 
+                        updated.tx_model || "", 
+                        updated.rx_model || "", 
+                        true // フラッシュ効果を有効化
+                    ); 
                 }
             }
-        }).subscribe((status) => {
-            console.log("WebSocketパイプライン購読ステータス:", status);
+        })
+        .subscribe((status) => {
+            console.log("Supabase リアルタイム通信状況:", status);
         });
     }
 
@@ -828,7 +853,7 @@
         const cell = row.querySelector(`.phase-${phase}`);
         if (!cell) return;
 
-        // 🚨 データが初期化または空（nullやNaN）で飛んできた場合はスケルトンに戻す
+        // 値が空、あるいは削除された場合は骨組みスケルトンに戻して早期リターン
         if (value === null || isNaN(value)) {
             updateCellSkeleton(linkId, phase);
             return;
@@ -865,7 +890,6 @@
                 <div class="w-full border-t border-slate-800/40 mt-1.5 pt-1 space-y-0.5">${memoHtml || '<div class="text-xs text-slate-600 italic text-center py-0.5">--</div>'}</div>
             </div>`;
 
-        // ⚡ 外部端末からリアルタイム受信した際、青色の枠線をフラッシュさせて更新を通知
         if (isLive) {
             const box = cell.querySelector('.cell-box');
             if(box) {
