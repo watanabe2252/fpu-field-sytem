@@ -798,12 +798,11 @@
             }
         }
 
-        // ⚡ 【インフラ環境追従型リアルタイム・パイプライン】
+        // ⚡ 【インフラ物理構造適合型リアルタイムパイプライン】
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, async payload => {
-            console.log("WebSocketイベント検知:", payload);
+            console.log("WebSocketパイプライン同期シグナル検出:", payload);
             
-            // DELETEイベントの場合はスケルトンに戻す
             if (payload.eventType === 'DELETE') {
                 const oldData = payload.old;
                 if (oldData && oldData.link_id && oldData.phase) {
@@ -812,12 +811,9 @@
                 return;
             }
 
-            // INSERT または UPDATE イベントの解析
             let updated = payload.new;
+            // 🔑 複合ユニークインデックスがないテーブル構造への安全弁対策：イベント検知時に全データを再スキャンして完全同期
             if (!updated || Object.keys(updated).length <= 2) {
-                // 🚨 【根本解決バイパス】Replica Identityが不完全でペイロードが空、もしくはIDのみの場合
-                // イベント情報から主キー(id)を特定、または全体から最新の変更レコードをバックグラウンドで超高速再フェッチ
-                console.warn("⚠️ ペイロード不完全を検知。データベースから実データを直接緊急追従取得します。");
                 const { data: fallbackRecords } = await sb.from('records').select('*').eq('program_id', activeProgramId);
                 if (fallbackRecords) {
                     fallbackRecords.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model, true));
@@ -825,7 +821,6 @@
                 return;
             }
 
-            // ペイロードが正常に届いている場合の通常反映処理
             if (String(updated.program_id) === String(activeProgramId)) { 
                 updateCell(
                     updated.link_id, 
@@ -843,7 +838,7 @@
                 ); 
             }
         }).subscribe((status) => {
-            console.log("リアルタイムパイプライン接続状態:", status);
+            console.log("Realtime Subscription Status:", status);
         });
     }
 
@@ -975,6 +970,7 @@
         document.getElementById('db-value').innerText = currentVal;
     }
 
+    // 🔑 インフラ構造（idが主キー）に適応させた上書きUpsertロジック
     async function submitToSupabase() {
         const linkId = document.getElementById('link-select').value;
         const currentPhase = document.getElementById('phase-select').value;
@@ -995,24 +991,26 @@
         };
 
         let promises = [];
+        const allPhases = batchAll ? ['tech', 'run', 'rehe', 'prod'] : [currentPhase];
 
-        if (batchAll) {
-            const allPhases = ['tech', 'run', 'rehe', 'prod'];
-            for (const phase of allPhases) {
-                const { data: ext } = await sb.from('records').select('value').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
-                let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (ext ? ext.value : 60);
-                promises.push(sb.from('records').upsert({
-                    ...baseRecord,
-                    phase: phase,
-                    value: valToSubmit
-                }, { onConflict: 'program_id,link_id,phase' }));
+        for (const phase of allPhases) {
+            // 🚨 レコードの重複を防ぐため、事前に既存の一意識別子 'id' を検出する
+            const { data: match } = await sb.from('records')
+                .select('id, value')
+                .eq('program_id', activeProgramId)
+                .eq('link_id', linkId)
+                .eq('phase', phase)
+                .maybeSingle();
+
+            let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (match ? match.value : 60);
+            
+            let payload = { ...baseRecord, phase: phase, value: valToSubmit };
+            // 既存のidが見つかれば、オブジェクトにマージして完全に上書き(UPDATE)させる
+            if (match && match.id) {
+                payload.id = match.id;
             }
-        } else {
-            promises.push(sb.from('records').upsert({
-                ...baseRecord,
-                phase: currentPhase,
-                value: parseInt(currentVal, 10)
-            }, { onConflict: 'program_id,link_id,phase' }));
+
+            promises.push(sb.from('records').upsert(payload, { onConflict: 'id' }));
         }
 
         const results = await Promise.all(promises);
@@ -1084,6 +1082,7 @@
         if (data) document.getElementById('dash-link-select').innerHTML = data.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
     }
 
+    // クイックセンターメモ更新機能のインフラ構造適応化
     async function submitDashCenterMemo() {
         const linkId = document.getElementById('dash-link-select').value;
         const phase = document.getElementById('dash-phase-select').value;
@@ -1093,7 +1092,7 @@
 
         const { data: currentRec } = await sb.from('records').select('*').eq('program_id', activeProgramId).eq('link_id', linkId).eq('phase', phase).maybeSingle();
         
-        await sb.from('records').upsert({
+        let payload = {
             program_id: activeProgramId, link_id: linkId, phase: phase,
             value: currentRec ? currentRec.value : 60,
             field_memo: currentRec ? currentRec.field_memo : "",
@@ -1104,7 +1103,14 @@
             ts_rate: currentRec ? currentRec.ts_rate : "",
             tx_model: currentRec ? currentRec.tx_model : "",
             rx_model: currentRec ? currentRec.rx_model : ""
-        }, { onConflict: 'program_id,link_id,phase' });
+        };
+
+        // 🚨 既存レコードの id 紐付けを徹底
+        if (currentRec && currentRec.id) {
+            payload.id = currentRec.id;
+        }
+
+        await sb.from('records').upsert(payload, { onConflict: 'id' });
 
         document.getElementById('dash-center-memo').value = "";
         document.getElementById('dash-channel-input').value = "";
