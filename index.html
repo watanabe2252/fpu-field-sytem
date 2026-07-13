@@ -185,9 +185,9 @@
             max-width: none !important;
         }
 
-        /* ⚡ リアルタイム受信時アウトライントランジション効果 */
+        /* ⚡ リアルタイム更新検知用のトランジション */
         .cell-box {
-            transition: outline 0.2s ease;
+            transition: outline 0.15s ease-in-out;
             outline: 2px solid transparent;
         }
     </style>
@@ -195,7 +195,7 @@
 <body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
 
     <!-- ===================================================
-       🔐 ログインビュー
+        🔐 ログインビュー
        =================================================== -->
     <div id="login-view" class="fixed inset-0 bg-bgDark z-[2000] flex items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
@@ -798,21 +798,20 @@
             }
         }
 
-        // ⚡ 購読チャンネルを重複させないために事前パージしてからリッスン開始
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-            console.log("リアルタイムイベント受信:", payload);
+            console.log("リアルタイム変更をキャッチ:", payload);
             const updated = payload.new || payload.old;
             if (updated && updated.program_id === activeProgramId) { 
                 if (payload.eventType === 'DELETE') { 
                     updateCellSkeleton(updated.link_id, updated.phase); 
                 } else { 
-                    // 🚨 【重要】別端末からの更新内容をそのまま画面の対象セルへリアルタイム転写
+                    // 🚨 ここで確実に第11引数に「true」を流し込み、他端末からのリアルタイム描画を強制更新します
                     updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
                 }
             }
         }).subscribe((status) => {
-            console.log("リアルタイムパイプライン接続状態:", status);
+            console.log("WebSocketパイプライン購読ステータス:", status);
         });
     }
 
@@ -827,7 +826,13 @@
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
         const cell = row.querySelector(`.phase-${phase}`);
-        if (!cell || isNaN(value)) return;
+        if (!cell) return;
+
+        // 🚨 データが初期化または空（nullやNaN）で飛んできた場合はスケルトンに戻す
+        if (value === null || isNaN(value)) {
+            updateCellSkeleton(linkId, phase);
+            return;
+        }
 
         let statusColor = 'text-accentGreen'; let bgStyle = 'bg-emerald-950/20 border-emerald-500/20';
         if (value < 35) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
@@ -860,12 +865,12 @@
                 <div class="w-full border-t border-slate-800/40 mt-1.5 pt-1 space-y-0.5">${memoHtml || '<div class="text-xs text-slate-600 italic text-center py-0.5">--</div>'}</div>
             </div>`;
 
-        // ⚡ 他端末からのライブ更新があった場合に青枠を一時適用してフラッシュ表示
+        // ⚡ 外部端末からリアルタイム受信した際、青色の枠線をフラッシュさせて更新を通知
         if (isLive) {
             const box = cell.querySelector('.cell-box');
             if(box) {
                 box.style.outline = "2px solid #38bdf8";
-                setTimeout(() => { box.style.outline = "2px solid transparent"; }, 800);
+                setTimeout(() => { box.style.outline = "2px solid transparent"; }, 1000);
             }
         }
     }
@@ -1212,7 +1217,6 @@
 
         document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
         
-        // 🚨 一般スタッフの場合にhidden属性を消さないように条件制御を適用
         document.querySelectorAll('.bottom-nav button').forEach(btn => {
             const isMaintBtn = (btn.id === 'nav-maintenance');
             if (currentUserRole !== 'admin' && isMaintBtn) {
