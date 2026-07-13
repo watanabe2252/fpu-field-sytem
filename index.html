@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FPU回線管理">
-    <!-- 🖼️ 【ここを書き換えてください】用意した画像名、またはURLを入力します -->
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- 📦 外部ライブラリ CDN (安定版に固定) -->
@@ -574,6 +573,27 @@
                         </select>
                     </div>
                     <button onclick="submitNewLink()" class="w-full bg-accentGreen text-bgDark font-black text-sm py-3 rounded-xl shadow-lg">この大会に受信点を追加</button>
+                </div>
+            </div>
+
+            <!-- 📊 CSV一括インポートブロック（スペック流し込み対応拡張） -->
+            <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
+                <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
+                </h2>
+                <div class="space-y-3 text-xs">
+                    <p class="text-slate-400 font-bold leading-relaxed">
+                        フォーマット (ヘッダーなし/UTF-8):<br>
+                        <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
+                        ※カテゴリ: <code class="text-slate-300 font-mono">main</code>, <code class="text-slate-300 font-mono">relay</code>, <code class="text-slate-300 font-mono">sub</code> (空欄時は自動でsub)
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-slate-800 file:text-accentBlue hover:file:bg-slate-700 cursor-pointer">
+                        <button onclick="importLinksAndSpecsFromCSV()" class="bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs px-4 py-2 rounded-xl transition shrink-0">
+                            インポート
+                        </button>
+                    </div>
+                    <div id="csv-status-msg" class="text-xs font-bold text-accentGreen empty:hidden"></div>
                 </div>
             </div>
 
@@ -1177,6 +1197,116 @@
         await sb.from('links').insert([{ id: "link-" + Date.now(), program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
         document.getElementById('link-name').value = ''; 
         loadRegisteredLinks();
+    }
+
+    // ⚡ CSVパース＆受信点マスター ＋ 初期スペック4日程自動生成インポート関数
+    async function importLinksAndSpecsFromCSV() {
+        if (!sb || !activeProgramId) return;
+        
+        const fileInput = document.getElementById('csv-file-input');
+        const statusMsg = document.getElementById('csv-status-msg');
+        statusMsg.className = "text-xs font-bold text-accentGreen";
+        statusMsg.innerText = "";
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            statusMsg.className = "text-xs font-bold text-rose-400";
+            statusMsg.innerText = "⚠️ CSVファイルを選択してください。";
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async function(e) {
+            const text = e.target.result;
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+            
+            if (lines.length === 0) {
+                statusMsg.className = "text-xs font-bold text-rose-400";
+                statusMsg.innerText = "⚠️ ファイルの中身が空です。";
+                return;
+            }
+
+            const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
+            let startOrder = count || 0;
+
+            const linksBatch = [];
+            const recordsBatch = [];
+            const validCategories = ['main', 'relay', 'sub'];
+            const phases = ['tech', 'run', 'rehe', 'prod'];
+
+            for (let i = 0; i < lines.length; i++) {
+                const columns = lines[i].split(',');
+                if (columns.length === 0 || !columns[0].trim()) continue;
+
+                // 各カラムを安全に展開 (足りない部分は空文字)
+                const name = columns[0]?.trim() || "";
+                const category = columns[1]?.trim().toLowerCase() || "sub";
+                const fpuChannel = columns[2]?.trim() || "";
+                const modType = columns[3]?.trim() || "";
+                const presetType = columns[4]?.trim() || "";
+                const tsRate = columns[5]?.trim() || "";
+                const txModel = columns[6]?.trim() || "";
+                const rxModel = columns[7]?.trim() || "";
+
+                const finalCategory = validCategories.includes(category) ? category : 'sub';
+                const generatedLinkId = "link-" + (Date.now() + i) + "-" + Math.random().toString(36).substring(2, 6);
+
+                // 1. linksテーブル用データ
+                linksBatch.push({
+                    id: generatedLinkId,
+                    program_id: activeProgramId,
+                    name: name,
+                    category: finalCategory,
+                    sort_order: startOrder++
+                });
+
+                // 2. 各リンクに対し、4つのフェーズ(日程)分の初期スペックレコードを事前生成
+                phases.forEach(phase => {
+                    recordsBatch.push({
+                        id: "rec-" + Date.now() + "-" + Math.random().toString(36).substring(2, 8),
+                        program_id: activeProgramId,
+                        link_id: generatedLinkId,
+                        phase: phase,
+                        value: 60, // デフォルト初期値
+                        fpu_channel: fpuChannel,
+                        mod_type: modType,
+                        preset_type: presetType,
+                        ts_rate: tsRate,
+                        tx_model: txModel,
+                        rx_model: rxModel,
+                        field_memo: "",
+                        center_memo: ""
+                    });
+                });
+            }
+
+            if (linksBatch.length === 0) {
+                statusMsg.className = "text-xs font-bold text-rose-400";
+                statusMsg.innerText = "⚠️ 有効な回線データが構築できませんでした。";
+                return;
+            }
+
+            statusMsg.innerText = `🔄 ${linksBatch.length}件の受信点とスペックをクラウドへ構築中...`;
+
+            // links と records へまとめて並列一括登録
+            const [linksRes, recordsRes] = await Promise.all([
+                sb.from('links').insert(linksBatch),
+                sb.from('records').insert(recordsBatch)
+            ]);
+
+            if (!linksRes.error && !recordsRes.error) {
+                statusMsg.innerText = `✔️ ${linksBatch.length}件の受信点（計${recordsBatch.length}個の初期スペックセル）のインポートが完全完了しました！`;
+                fileInput.value = "";
+                loadRegisteredLinks();
+            } else {
+                console.error("CSV Import Error:", linksRes.error, recordsRes.error);
+                statusMsg.className = "text-xs font-bold text-rose-400";
+                statusMsg.innerText = "❌ データベースへの一括インサート中にエラーが発生しました。";
+            }
+        };
+
+        reader.readAsText(file, 'UTF-8');
     }
 
     async function deleteLink(id) {
