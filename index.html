@@ -548,14 +548,14 @@
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- 📊 CSV一括インポートブロック（最上部に配置変更） -->
+            <!-- 📊 CSV一括インポートブロック（ヘッダー行対応版） -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
                 </h2>
                 <div class="space-y-3 text-xs">
                     <p class="text-slate-400 font-bold leading-relaxed">
-                        フォーマット (ヘッダーなし/UTF-8):<br>
+                        フォーマット (UTF-8): 1行目に見出し（ヘッダー行）を入れても自動スキップされます。<br>
                         <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
                         ※カテゴリ: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">sub</code>(光)
                     </p>
@@ -1200,7 +1200,7 @@
         loadRegisteredLinks();
     }
 
-    // ⚡ CSVパース＆スペック一括生成インポート処理関数
+    // ⚡ CSVパース＆初期スペック4日程自動生成インポート（ヘッダー行スキップ自動判定搭載版）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1239,6 +1239,12 @@
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
+
+                // 🌟 【見出しスキップ】：1行目に「受信点名」や「名前」という文字が含まれていればヘッダー行とみなし飛ばす
+                if (i === 0 && (columns[0].includes('受信点名') || columns[0].includes('名前'))) {
+                    console.log("⚡ CSVの1行目を見出し(ヘッダー)として認識したため自動スキップします");
+                    continue;
+                }
 
                 const name = columns[0]?.trim() || "";
                 const category = columns[1]?.trim().toLowerCase() || "sub";
@@ -1376,7 +1382,6 @@
     }
 
     function switchView(viewName) {
-        // 🚨 重要：一般のFIELD STAFFアカウントの場合、メンテナンス画面自体が非表示になります
         if (currentUserRole !== 'admin' && (viewName === 'maintenance' || viewName === 'useradmin')) {
             viewName = 'dashboard';
         }
