@@ -210,7 +210,7 @@
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold">メールアドレス / Email</label>
-                    <input type="email" id="login-email" placeholder="example@fpu.system" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all font-mono">
+                    <input type="email" id="login-email" placeholder="example@fpu.system" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue transition-all font-mono font-bold">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold">パスワード / Password</label>
@@ -252,7 +252,7 @@
 
     <!-- ===================================================
        ➕ 新規番組作成モーダル
-       ================================================== -->
+       =================================================== -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -261,7 +261,7 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID / Program ID (半角英数字)</label>
-                    <input type="text" id="new-program-id" placeholder="例: ekiden-2026" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono">
+                    <input type="text" id="new-program-id" placeholder="例: ekiden-2026" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue placeholder-slate-600 block transition-all font-mono font-bold">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称 / Tournament Title</label>
@@ -286,7 +286,7 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">番組ID</label>
-                    <input type="text" id="edit-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue block transition-all font-mono">
+                    <input type="text" id="edit-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue block transition-all font-mono font-bold">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">番組名・大会名称</label>
@@ -311,7 +311,7 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">新規作成する番組ID (半角英数字)</label>
-                    <input type="text" id="dup-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-mono">
+                    <input type="text" id="dup-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-mono font-bold">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">新規作成する番組・大会名</label>
@@ -548,21 +548,21 @@
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- 📊 CSV一括インポートブロック（乗算セパレーター完全修正版） -->
+            <!-- 📊 CSV一括インポートブロック（Upsert対応、1行目スキップ＆丸めエラー完全排除） -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
-                    <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
+                    <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括上書き登録
                 </h2>
                 <div class="space-y-3 text-xs">
                     <p class="text-slate-400 font-bold leading-relaxed">
-                        フォーマット (UTF-8): エクセル作成時の1行目（見出し・ヘッダー行）はシステムが自動でスキップします。<br>
+                        フォーマット (UTF-8): エクセル作成時の1行目（見出し・ヘッダー行）は自動でスキップされます。<br>
                         <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
                         ※カテゴリ: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">sub</code>(光)
                     </p>
                     <div class="flex flex-col gap-2">
                         <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-slate-800 file:text-accentBlue hover:file:bg-slate-700 cursor-pointer">
                         <button onclick="importLinksAndSpecsFromCSV()" class="w-full bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-sm py-2.5 rounded-xl transition shadow-md font-bold text-center">
-                            <i class="fas fa-upload mr-1"></i> CSVインポートを実行
+                            <i class="fas fa-upload mr-1"></i> CSVインポートを実行 (新規追加＆自動上書き)
                         </button>
                     </div>
                     <div id="csv-status-msg" class="text-xs font-bold text-accentGreen empty:hidden bg-slate-900/40 p-2 rounded-xl border border-borderStroke/60 text-center"></div>
@@ -1203,7 +1203,7 @@
         loadRegisteredLinks();
     }
 
-    // ⚡ CSV一括インポート（乗算数式によるキー衝突回避＆1行目強制スキップ完全解決版）
+    // ⚡ CSV一括インポート（上書きUpsert & 数式衝突回避 ＆ 1行目無条件スキップ完全決定版）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1231,23 +1231,31 @@
                 return;
             }
 
-            // 現在の既存の受信点数を取得
+            statusMsg.innerText = "🔄 クラウド上の既存データをスキャン中...";
+
+            // 事前に現在のアクティブな番組に登録されている既存の受信点データをロードしてマッピングする
+            const { data: existingLinks } = await sb.from('links').select('*').eq('program_id', activeProgramId);
+            const linkMap = {};
+            if (existingLinks) {
+                existingLinks.forEach(l => { linkMap[l.name.trim()] = l; });
+            }
+
             const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
             let startOrder = count || 0;
 
             const linksBatch = [];
             const recordsBatch = [];
-            const validCategories = ['main', 'relay', 'sub'];
             const phases = ['tech', 'run', 'rehe', 'prod'];
+            const validCategories = ['main', 'relay', 'sub'];
 
-            // 🌟 過去データや他番組データと衝突せず、JavaScriptの安全整数内で収まる10万番台ベース
+            // JavaScriptのNumber.MAX_SAFE_INTEGERを決して超えない10万番台からのセーフ連番ベース
             const idSeedBase = 100000 + startOrder; 
 
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
-                // 🌟 1行目（見出し・ヘッダー行）は強制的にスキップ
+                // 🌟 1行目（ヘッダー・見出し行）はエクセルの記述内容に関わらず「無条件」で強制スキップ
                 if (i === 0) {
                     console.log("⚡ 1行目をヘッダー(見出し)行として強制スキップしました");
                     continue;
@@ -1264,27 +1272,37 @@
 
                 const finalCategory = validCategories.includes(category) ? category : 'sub';
                 
-                // 🌟 受信点の一意な数値ID
-                const numLinkId = idSeedBase + i;
+                let numLinkId;
+                let isNewLink = false;
+
+                // 🌟 すでにクラウドに同一名称の受信点が存在するか照合
+                if (linkMap[name]) {
+                    // 既存の数値IDと配置順序（sort_order）をそのまま継承する
+                    numLinkId = linkMap[name].id;
+                } else {
+                    // 未登録の回線ならセーフ連番でIDと配置順を新規付与
+                    numLinkId = idSeedBase + i;
+                    isNewLink = true;
+                }
 
                 linksBatch.push({
                     id: numLinkId,
                     program_id: activeProgramId,
                     name: name,
                     category: finalCategory,
-                    sort_order: startOrder++
+                    sort_order: isNewLink ? startOrder++ : linkMap[name].sort_order
                 });
 
                 phases.forEach((phase, phaseIdx) => {
-                    // 🌟 【最重要修正】桁の重なりによるキー衝突を防ぐため、受信点インデックスを10倍にしてからフェーズ番号を足す数式に変更
+                    // 🌟 【一意のID生成数式】ID同士が衝突しないように 10倍 のオフセットを計算
                     const numRecordId = (numLinkId * 10) + (phaseIdx + 1);
 
                     recordsBatch.push({
-                        id: numRecordId,        // 絶対にユニークな乗算連番ID
+                        id: numRecordId,        // 衝突のない一意な数値
                         program_id: activeProgramId,
-                        link_id: numLinkId,     // 外部キー
+                        link_id: numLinkId,
                         phase: phase,
-                        value: 60,
+                        value: 60, // 上書き時も電界値は基本の60dBでリセット
                         fpu_channel: fpuChannel,
                         mod_type: modType,
                         preset_type: presetType,
@@ -1303,16 +1321,17 @@
                 return;
             }
 
-            statusMsg.innerText = `🔄 ${linksBatch.length}件の受信点情報をクラウドへ送信中...`;
+            statusMsg.innerText = `🔄 CSVの最新スペックをクラウドへ同期(上書き)中...`;
 
+            // クラウド側へ upsert（あればスペック自動上書き、なければ新規作成）をまとめて実行
             const [linksRes, recordsRes] = await Promise.all([
-                sb.from('links').insert(linksBatch),
-                sb.from('records').insert(recordsBatch)
+                sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
+                sb.from('records').upsert(recordsBatch, { onConflict: 'id' })
             ]);
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート完了！ ${linksBatch.length}件の受信点マスターとスペックセルを完全に同期しました。`;
+                statusMsg.innerText = `✔️ インポート＆上書き完了！ ${linksBatch.length}件の受信点とスペックデータの生成が完全成功しました。`;
                 fileInput.value = "";
                 
                 loadRegisteredLinks();
@@ -1321,7 +1340,7 @@
                 const err = linksRes.error || recordsRes.error;
                 console.error("CSV Import Error:", err);
                 statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = `❌ 登録中にインフラエラーが発生しました: ${err ? err.message : 'Unknown'}`;
+                statusMsg.innerText = `❌ クラウド同期中にインフラエラーが発生しました: ${err ? err.message : 'Unknown'}`;
             }
         };
 
