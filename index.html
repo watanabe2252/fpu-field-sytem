@@ -184,6 +184,12 @@
             min-width: 180px !important;
             max-width: none !important;
         }
+
+        /* ⚡ リアルタイム受信時アウトライントランジション効果 */
+        .cell-box {
+            transition: outline 0.2s ease;
+            outline: 2px solid transparent;
+        }
     </style>
 </head>
 <body class="text-slate-100 font-sans select-none overflow-x-hidden mode-mobile">
@@ -792,14 +798,22 @@
             }
         }
 
+        // ⚡ 購読チャンネルを重複させないために事前パージしてからリッスン開始
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
+            console.log("リアルタイムイベント受信:", payload);
             const updated = payload.new || payload.old;
             if (updated && updated.program_id === activeProgramId) { 
-                if (payload.eventType === 'DELETE') { updateCellSkeleton(updated.link_id, updated.phase); } 
-                else { updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); }
+                if (payload.eventType === 'DELETE') { 
+                    updateCellSkeleton(updated.link_id, updated.phase); 
+                } else { 
+                    // 🚨 【重要】別端末からの更新内容をそのまま画面の対象セルへリアルタイム転写
+                    updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
+                }
             }
-        }).subscribe();
+        }).subscribe((status) => {
+            console.log("リアルタイムパイプライン接続状態:", status);
+        });
     }
 
     function updateCellSkeleton(linkId, phase) {
@@ -846,11 +860,12 @@
                 <div class="w-full border-t border-slate-800/40 mt-1.5 pt-1 space-y-0.5">${memoHtml || '<div class="text-xs text-slate-600 italic text-center py-0.5">--</div>'}</div>
             </div>`;
 
+        // ⚡ 他端末からのライブ更新があった場合に青枠を一時適用してフラッシュ表示
         if (isLive) {
             const box = cell.querySelector('.cell-box');
             if(box) {
                 box.style.outline = "2px solid #38bdf8";
-                setTimeout(() => { box.style.outline = "none"; }, 800);
+                setTimeout(() => { box.style.outline = "2px solid transparent"; }, 800);
             }
         }
     }
