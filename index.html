@@ -547,6 +547,28 @@
        =================================================== -->
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
+            
+            <!-- 📊 CSV一括インポートブロック（最上部に配置変更） -->
+            <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
+                <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
+                </h2>
+                <div class="space-y-3 text-xs">
+                    <p class="text-slate-400 font-bold leading-relaxed">
+                        フォーマット (ヘッダーなし/UTF-8):<br>
+                        <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
+                        ※カテゴリ: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">sub</code>(光)
+                    </p>
+                    <div class="flex flex-col gap-2">
+                        <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-slate-800 file:text-accentBlue hover:file:bg-slate-700 cursor-pointer">
+                        <button onclick="importLinksAndSpecsFromCSV()" class="w-full bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-sm py-2.5 rounded-xl transition shadow-md font-bold text-center">
+                            <i class="fas fa-upload mr-1"></i> CSVインポートを実行
+                        </button>
+                    </div>
+                    <div id="csv-status-msg" class="text-xs font-bold text-accentGreen empty:hidden bg-slate-900/40 p-2 rounded-xl border border-borderStroke/60 text-center"></div>
+                </div>
+            </div>
+
             <div id="maint-admin-box" class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl flex items-center justify-between">
                 <div>
                     <h3 class="text-xs font-black text-amber-400 uppercase tracking-wider"><i class="fas fa-users-cog mr-1"></i> ポジション別 アカウント権限管理</h3>
@@ -557,7 +579,7 @@
             
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
-                    <i class="fas fa-plus-circle text-amber-400"></i> 受信点（リンク）の新規追加
+                    <i class="fas fa-plus-circle text-amber-400"></i> 受信点（リンク）の新規手動追加
                 </h2>
                 <div class="space-y-3 text-xs">
                     <div>
@@ -573,27 +595,6 @@
                         </select>
                     </div>
                     <button onclick="submitNewLink()" class="w-full bg-accentGreen text-bgDark font-black text-sm py-3 rounded-xl shadow-lg">この大会に受信点を追加</button>
-                </div>
-            </div>
-
-            <!-- 📊 CSV一括インポートブロック（スペック流し込み対応拡張） -->
-            <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
-                <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
-                    <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
-                </h2>
-                <div class="space-y-3 text-xs">
-                    <p class="text-slate-400 font-bold leading-relaxed">
-                        フォーマット (ヘッダーなし/UTF-8):<br>
-                        <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
-                        ※カテゴリ: <code class="text-slate-300 font-mono">main</code>, <code class="text-slate-300 font-mono">relay</code>, <code class="text-slate-300 font-mono">sub</code> (空欄時は自動でsub)
-                    </p>
-                    <div class="flex items-center gap-2">
-                        <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-slate-800 file:text-accentBlue hover:file:bg-slate-700 cursor-pointer">
-                        <button onclick="importLinksAndSpecsFromCSV()" class="bg-accentBlue hover:bg-sky-600 text-bgDark font-black text-xs px-4 py-2 rounded-xl transition shrink-0">
-                            インポート
-                        </button>
-                    </div>
-                    <div id="csv-status-msg" class="text-xs font-bold text-accentGreen empty:hidden"></div>
                 </div>
             </div>
 
@@ -1199,7 +1200,7 @@
         loadRegisteredLinks();
     }
 
-    // ⚡ CSVパース＆受信点マスター ＋ 初期スペック4日程自動生成インポート関数
+    // ⚡ CSVパース＆スペック一括生成インポート処理関数
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1239,7 +1240,6 @@
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
-                // 各カラムを安全に展開 (足りない部分は空文字)
                 const name = columns[0]?.trim() || "";
                 const category = columns[1]?.trim().toLowerCase() || "sub";
                 const fpuChannel = columns[2]?.trim() || "";
@@ -1252,7 +1252,6 @@
                 const finalCategory = validCategories.includes(category) ? category : 'sub';
                 const generatedLinkId = "link-" + (Date.now() + i) + "-" + Math.random().toString(36).substring(2, 6);
 
-                // 1. linksテーブル用データ
                 linksBatch.push({
                     id: generatedLinkId,
                     program_id: activeProgramId,
@@ -1261,14 +1260,13 @@
                     sort_order: startOrder++
                 });
 
-                // 2. 各リンクに対し、4つのフェーズ(日程)分の初期スペックレコードを事前生成
                 phases.forEach(phase => {
                     recordsBatch.push({
                         id: "rec-" + Date.now() + "-" + Math.random().toString(36).substring(2, 8),
                         program_id: activeProgramId,
                         link_id: generatedLinkId,
                         phase: phase,
-                        value: 60, // デフォルト初期値
+                        value: 60,
                         fpu_channel: fpuChannel,
                         mod_type: modType,
                         preset_type: presetType,
@@ -1287,22 +1285,21 @@
                 return;
             }
 
-            statusMsg.innerText = `🔄 ${linksBatch.length}件の受信点とスペックをクラウドへ構築中...`;
+            statusMsg.innerText = `🔄 ${linksBatch.length}件の受信点情報をクラウドへ送信中...`;
 
-            // links と records へまとめて並列一括登録
             const [linksRes, recordsRes] = await Promise.all([
                 sb.from('links').insert(linksBatch),
                 sb.from('records').insert(recordsBatch)
             ]);
 
             if (!linksRes.error && !recordsRes.error) {
-                statusMsg.innerText = `✔️ ${linksBatch.length}件の受信点（計${recordsBatch.length}個の初期スペックセル）のインポートが完全完了しました！`;
+                statusMsg.innerText = `✔️ インポート完了！ ${linksBatch.length}件の受信点マスターと${recordsBatch.length}個のスペックセルを同時生成しました。`;
                 fileInput.value = "";
                 loadRegisteredLinks();
             } else {
                 console.error("CSV Import Error:", linksRes.error, recordsRes.error);
                 statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = "❌ データベースへの一括インサート中にエラーが発生しました。";
+                statusMsg.innerText = "❌ 登録中にインフラエラーが発生しました。";
             }
         };
 
@@ -1379,6 +1376,7 @@
     }
 
     function switchView(viewName) {
+        // 🚨 重要：一般のFIELD STAFFアカウントの場合、メンテナンス画面自体が非表示になります
         if (currentUserRole !== 'admin' && (viewName === 'maintenance' || viewName === 'useradmin')) {
             viewName = 'dashboard';
         }
