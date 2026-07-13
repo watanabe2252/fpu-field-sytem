@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- 📦 外部ライブラリ CDN -->
+    <!-- 📦 外部ライブラリ CDN (WebSocketの挙動が最も安定しているバージョンに固定) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.7"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -85,17 +85,6 @@
         }
 
         /* スクロール用コンテナ */
-        .table-container {
-            overflow-x: auto;
-            position: relative;
-            -webkit-overflow-scrolling: touch;
-            width: 100%;
-            background-color: #111625;
-            border: 1px solid #1e2538;
-            border-radius: 1rem;
-            padding: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
         .table-container {
             overflow-x: auto;
             position: relative;
@@ -776,7 +765,6 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
-    // ⚡ 大会選択直後に【一度だけ裏で常時常駐】させ、切断・再接続の衝突を完全に防止する購読パイプライン
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
@@ -806,45 +794,49 @@
                 }
             });
 
-            // 初回のデータ一括描画
             await refreshDashboardData();
         }
 
-        // 🚨 リアルタイム不通問題を完全に叩き潰す超高耐性パイプライン
+        // 🚨 【超強靭：インフラ同期エラー・データベース監視バグを完全回避する「ブロードキャスト」常時回線】
+        // データベースのWALログを監視する従来の「postgres_changes」を完全に捨て、
+        // 送信側のブラウザから直接パケットを投げ合う「broadcast」イベントリッスンに切り替えて、サーバーの不具合をバイパスします。
         sb.removeAllChannels();
-        sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-            console.log("リアルタイムパケット受信:", payload);
-            const updated = payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old;
-            if (!updated) return;
-
-            // 🚨 【超強化フィルター】パケット内の program_id が空欄、もしくは現在の大会IDに一致し、かつ画面上に対象の回線行が存在すれば、問答無用で更新を実行する
-            const hasRow = document.getElementById(`row-${updated.link_id}`);
-            const isCurrentProg = !updated.program_id || String(updated.program_id) === String(activeProgramId);
-
-            if (hasRow && isCurrentProg) { 
-                if (payload.eventType === 'DELETE') { 
-                    updateCellSkeleton(updated.link_id, updated.phase); 
-                } else { 
-                    updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
-                }
+        sb.channel('live-records-filter')
+        .on('broadcast', { event: 'record_update' }, payload => {
+            console.log("🚀 同期ブロードキャスト信号を受信:", payload);
+            const updated = payload.payload;
+            if (updated) {
+                updateCell(
+                    updated.link_id, 
+                    updated.phase, 
+                    parseInt(updated.value, 10), 
+                    updated.field_memo || "", 
+                    updated.center_memo || "", 
+                    updated.fpu_channel || "", 
+                    updated.mod_type || "", 
+                    updated.preset_type || "", 
+                    updated.ts_rate || "", 
+                    updated.tx_model || "", 
+                    updated.rx_model || "", 
+                    true // 点滅エフェクトを強制オン
+                );
             }
-        }).subscribe((status) => {
+        })
+        .subscribe((status) => {
             console.log("リアルタイム回線接続状況:", status);
-            // ヘッダーの通信ランプの状態を書き換える
             const ind = document.getElementById('rt-indicator');
             if(ind) {
                 if(status === 'SUBSCRIBED') {
                     ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse";
-                    ind.title = "リアルタイム同期中";
+                    ind.title = "ブロードキャスト常時同期中";
                 } else {
                     ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]";
-                    ind.title = "通信エラー: " + status;
+                    ind.title = "切断状態: " + status;
                 }
             }
         });
     }
 
-    // タブ切り替え時はWebSocketをいじらず、純粋に最新状態のデータ上書きのみを実行
     async function refreshDashboardData() {
         if (!sb || !activeProgramId) return;
         const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
@@ -1019,6 +1011,16 @@
             }
 
             promises.push(sb.from('records').upsert(payload, { onConflict: 'id' }));
+            
+            // 🚀 【インフラ回避ハック】データをクラウドに保存した直後、
+            // Supabaseのデータベース監視を通さず、WebSocketの専用ブロードキャストチャンネルへパケットを直接射出
+            setTimeout(() => {
+                sb.channel('live-records-filter').send({
+                    type: 'broadcast',
+                    event: 'record_update',
+                    payload: payload
+                });
+            }, 100);
         }
 
         const results = await Promise.all(promises);
@@ -1117,6 +1119,15 @@
         }
 
         await sb.from('records').upsert(payload, { onConflict: 'id' });
+
+        // 🚀 クイック更新側も直接ブロードキャストを撃ち出す
+        setTimeout(() => {
+            sb.channel('live-records-filter').send({
+                type: 'broadcast',
+                event: 'record_update',
+                payload: payload
+            });
+        }, 100);
 
         document.getElementById('dash-center-memo').value = "";
         document.getElementById('dash-channel-input').value = "";
