@@ -96,6 +96,17 @@
             padding: 12px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
+        .table-container {
+            overflow-x: auto;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            background-color: #111625;
+            border: 1px solid #1e2538;
+            border-radius: 1rem;
+            padding: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
         table {
             width: 100%;
             border-collapse: separate;
@@ -333,6 +344,8 @@
         </div>
         
         <div class="flex items-center gap-2 shrink-0">
+            <!-- ⚡ リアルタイム通信インジケーターランプ -->
+            <div id="rt-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all duration-300" title="Realtime Status"></div>
             <div id="user-role-badge" class="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
             <button onclick="location.reload()" class="text-xs bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition font-bold text-center">大会変更</button>
         </div>
@@ -763,7 +776,7 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
-    // ⚡ 大会（番組）選択直後に【1回だけ】実行し、常時WebSocket接続を確立する
+    // ⚡ 大会選択直後に【一度だけ裏で常時常駐】させ、切断・再接続の衝突を完全に防止する購読パイプライン
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
@@ -793,18 +806,22 @@
                 }
             });
 
-            // データの初期ロード
+            // 初回のデータ一括描画
             await refreshDashboardData();
         }
 
-        // 🚨 【最重要バグ修正】
-        // タブ切り替え時に毎度チャネルを破棄・再接続すると、非同期処理の競合でWebSocket購読がサイレントフリーズします。
-        // ここで唯一無二のクリーンな常時常駐チャネルを1回だけ確立します。
+        // 🚨 リアルタイム不通問題を完全に叩き潰す超高耐性パイプライン
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-            console.log("リアルタイム変更をキャッチ:", payload);
-            const updated = payload.new || payload.old;
-            if (updated && String(updated.program_id) === String(activeProgramId)) { 
+            console.log("リアルタイムパケット受信:", payload);
+            const updated = payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old;
+            if (!updated) return;
+
+            // 🚨 【超強化フィルター】パケット内の program_id が空欄、もしくは現在の大会IDに一致し、かつ画面上に対象の回線行が存在すれば、問答無用で更新を実行する
+            const hasRow = document.getElementById(`row-${updated.link_id}`);
+            const isCurrentProg = !updated.program_id || String(updated.program_id) === String(activeProgramId);
+
+            if (hasRow && isCurrentProg) { 
                 if (payload.eventType === 'DELETE') { 
                     updateCellSkeleton(updated.link_id, updated.phase); 
                 } else { 
@@ -812,11 +829,22 @@
                 }
             }
         }).subscribe((status) => {
-            console.log("WebSocketパイプライン常時接続ステータス:", status);
+            console.log("リアルタイム回線接続状況:", status);
+            // ヘッダーの通信ランプの状態を書き換える
+            const ind = document.getElementById('rt-indicator');
+            if(ind) {
+                if(status === 'SUBSCRIBED') {
+                    ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse";
+                    ind.title = "リアルタイム同期中";
+                } else {
+                    ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]";
+                    ind.title = "通信エラー: " + status;
+                }
+            }
         });
     }
 
-    // ⚡ タブを切り替えて戻ってきた時は、WebSocket接続を壊さず「純粋なデータ上書き」だけを実行
+    // タブ切り替え時はWebSocketをいじらず、純粋に最新状態のデータ上書きのみを実行
     async function refreshDashboardData() {
         if (!sb || !activeProgramId) return;
         const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
@@ -1092,7 +1120,6 @@
 
         document.getElementById('dash-center-memo').value = "";
         document.getElementById('dash-channel-input').value = "";
-        // 🚨 リアルタイムがONなので、DOM全消去を伴うinitDashboard()ではなく、純粋な再ロードを実行
         await refreshDashboardData();
     }
 
@@ -1250,7 +1277,6 @@
         const targetView = document.getElementById(`view-${viewName}`);
         if (targetView) {
             targetView.classList.add('active');
-            // 🚨 【大改修】WebSocketの常時接続を切断・再接続して自壊させるのをやめ、純粋なデータ最新化処理のみをキックします
             if (viewName === 'dashboard') refreshDashboardData();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
