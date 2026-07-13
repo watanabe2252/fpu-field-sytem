@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>⚡ FPU固定回線 総合管理システム</title>
     
+    <!-- 📱 Apple / iOS 用 ホーム画面アイコン・スタンドアロン設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FPU回線管理">
+    <!-- 🖼️ 【ここを書き換えてください】用意した画像名、またはURLを入力します -->
+    <link rel="apple-touch-icon" href="icon.png">
     
     <!-- 📦 外部ライブラリ CDN (安定版に固定) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.7"></script>
@@ -635,7 +638,6 @@
     let currentUserRole = "staff";
     let sortableInstances = { main: null, relay: null, sub: null };
     
-    // 🚨 WebSocketの多重衝突を防ぐ唯一のグローバル通信インスタンス
     let realtimeChannelInstance = null;
 
     window.addEventListener('load', async () => {
@@ -768,7 +770,6 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
-    // ⚡ 大会選択直後に【一度だけ】安全にWebSocketチャネルを確立する関数
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
@@ -801,8 +802,6 @@
             await refreshDashboardData();
         }
 
-        // 🚨 【最致命バグ完全修正】：非同期切断命令（removeAllChannels）との衝突を徹底排除
-        // すでに有効なチャンネルが存在していればそのまま使い回し、切断処理を絶対に噛ませない設計に切り替え
         if (!realtimeChannelInstance) {
             console.log("⚡ クリーンなWebSocket通信セッションを新規確立します");
             realtimeChannelInstance = sb.channel('live-records-pipeline');
@@ -838,12 +837,10 @@
             });
         } else {
             console.log("⚡ 既存の健全なWebSocket回線が維持されているため、切断せず再利用します");
-            // 大会が切り替わった場合でも即座に対応できるよう、初期化確認のために同期を実行
             await refreshDashboardData();
         }
     }
 
-    // タブ切り替え時はWebSocketを絶対に触らず、純粋なデータ最新化のみをバックグラウンド実行
     async function refreshDashboardData() {
         if (!sb || !activeProgramId) return;
         const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
@@ -1276,7 +1273,6 @@
         const targetView = document.getElementById(`view-${viewName}`);
         if (targetView) {
             targetView.classList.add('active');
-            // 🚨 チャンネル再利用モードになったため、ダッシュボード遷移時も安全に呼び出し可能
             if (viewName === 'dashboard') refreshDashboardData();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
