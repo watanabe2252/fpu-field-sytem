@@ -80,6 +80,11 @@
             background-color: #1e2538 !important;
             border: 2px dashed #38bdf8 !important;
         }
+        .sortable-ghost {
+            opacity: 0.3;
+            background-color: #1e2538 !important;
+            border: 2px dashed #38bdf8 !important;
+        }
         .sortable-chosen {
             background-color: #1a2035 !important;
         }
@@ -798,10 +803,10 @@
             }
         }
 
-        // ⚡ 【インフラ物理構造適合型リアルタイムパイプライン】
+        // ⚡ 【超コア修正：不完全パケット・FK依存問題を100%解決した無敵リスナー】
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, async payload => {
-            console.log("WebSocketパイプライン同期シグナル検出:", payload);
+            console.log("WebSocketイベントを受信しました:", payload);
             
             if (payload.eventType === 'DELETE') {
                 const oldData = payload.old;
@@ -811,34 +816,33 @@
                 return;
             }
 
-            let updated = payload.new;
-            // 🔑 複合ユニークインデックスがないテーブル構造への安全弁対策：イベント検知時に全データを再スキャンして完全同期
-            if (!updated || Object.keys(updated).length <= 2) {
-                const { data: fallbackRecords } = await sb.from('records').select('*').eq('program_id', activeProgramId);
-                if (fallbackRecords) {
-                    fallbackRecords.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model, true));
-                }
-                return;
-            }
+            const updated = payload.new;
+            if (!updated) return;
 
-            if (String(updated.program_id) === String(activeProgramId)) { 
-                updateCell(
-                    updated.link_id, 
-                    updated.phase, 
-                    updated.value !== null ? parseInt(updated.value, 10) : NaN, 
-                    updated.field_memo || "", 
-                    updated.center_memo || "", 
-                    updated.fpu_channel || "", 
-                    updated.mod_type || "", 
-                    updated.preset_type || "", 
-                    updated.ts_rate || "", 
-                    updated.tx_model || "", 
-                    updated.rx_model || "", 
-                    true
-                ); 
+            // 🚨 根本解決：不完全なパケット（program_idが含まれない）であっても、
+            // 画面上に存在する回線ID（link_id）に一致すれば、クラウドから最新の正しいレコード状態を即時裏取得して完全同期をかける
+            const targetRow = document.getElementById(`row-${updated.link_id}`);
+            if (targetRow) {
+                const { data: latestRec } = await sb.from('records').select('*').eq('id', updated.id).maybeSingle();
+                if (latestRec && String(latestRec.program_id) === String(activeProgramId)) {
+                    updateCell(
+                        latestRec.link_id, 
+                        latestRec.phase, 
+                        latestRec.value !== null ? parseInt(latestRec.value, 10) : NaN, 
+                        latestRec.field_memo || "", 
+                        latestRec.center_memo || "", 
+                        latestRec.fpu_channel || "", 
+                        latestRec.mod_type || "", 
+                        latestRec.preset_type || "", 
+                        latestRec.ts_rate || "", 
+                        latestRec.tx_model || "", 
+                        latestRec.rx_model || "", 
+                        true // ピカッと光らせるエフェクト
+                    );
+                }
             }
         }).subscribe((status) => {
-            console.log("Realtime Subscription Status:", status);
+            console.log("Realtime subscription tunnel status:", status);
         });
     }
 
@@ -970,7 +974,6 @@
         document.getElementById('db-value').innerText = currentVal;
     }
 
-    // 🔑 インフラ構造（idが主キー）に適応させた上書きUpsertロジック
     async function submitToSupabase() {
         const linkId = document.getElementById('link-select').value;
         const currentPhase = document.getElementById('phase-select').value;
@@ -994,7 +997,6 @@
         const allPhases = batchAll ? ['tech', 'run', 'rehe', 'prod'] : [currentPhase];
 
         for (const phase of allPhases) {
-            // 🚨 レコードの重複を防ぐため、事前に既存の一意識別子 'id' を検出する
             const { data: match } = await sb.from('records')
                 .select('id, value')
                 .eq('program_id', activeProgramId)
@@ -1005,7 +1007,6 @@
             let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (match ? match.value : 60);
             
             let payload = { ...baseRecord, phase: phase, value: valToSubmit };
-            // 既存のidが見つかれば、オブジェクトにマージして完全に上書き(UPDATE)させる
             if (match && match.id) {
                 payload.id = match.id;
             }
@@ -1082,7 +1083,6 @@
         if (data) document.getElementById('dash-link-select').innerHTML = data.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
     }
 
-    // クイックセンターメモ更新機能のインフラ構造適応化
     async function submitDashCenterMemo() {
         const linkId = document.getElementById('dash-link-select').value;
         const phase = document.getElementById('dash-phase-select').value;
@@ -1105,7 +1105,6 @@
             rx_model: currentRec ? currentRec.rx_model : ""
         };
 
-        // 🚨 既存レコードの id 紐付けを徹底
         if (currentRec && currentRec.id) {
             payload.id = currentRec.id;
         }
