@@ -798,45 +798,52 @@
             }
         }
 
-        // ⚡ 【リアルタイム更新の超コア修正】
+        // ⚡ 【インフラ環境追従型リアルタイム・パイプライン】
         sb.removeAllChannels();
-        sb.channel('live-records-filter')
-        .on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'records' 
-        }, payload => {
-            console.log("リアルタイムイベント受信成功:", payload);
+        sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, async payload => {
+            console.log("WebSocketイベント検知:", payload);
             
-            // INSERT, UPDATE, もしくはマニュアル上書きを全キャッチ
-            const updated = payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old;
-            if (!updated) return;
-
-            // 🚨 最重要：大会IDの厳密型比較を排除（Stringキャストで完全一致を保証）
-            if (String(updated.program_id) === String(activeProgramId)) { 
-                if (payload.eventType === 'DELETE') { 
-                    updateCellSkeleton(updated.link_id, updated.phase); 
-                } else { 
-                    // 🚨 データベースが上書きを検知した瞬間に、描画対象のセルへピンポイントに強制描画
-                    updateCell(
-                        updated.link_id, 
-                        updated.phase, 
-                        updated.value !== null ? parseInt(updated.value, 10) : NaN, 
-                        updated.field_memo || "", 
-                        updated.center_memo || "", 
-                        updated.fpu_channel || "", 
-                        updated.mod_type || "", 
-                        updated.preset_type || "", 
-                        updated.ts_rate || "", 
-                        updated.tx_model || "", 
-                        updated.rx_model || "", 
-                        true // フラッシュ効果を有効化
-                    ); 
+            // DELETEイベントの場合はスケルトンに戻す
+            if (payload.eventType === 'DELETE') {
+                const oldData = payload.old;
+                if (oldData && oldData.link_id && oldData.phase) {
+                    updateCellSkeleton(oldData.link_id, oldData.phase);
                 }
+                return;
             }
-        })
-        .subscribe((status) => {
-            console.log("Supabase リアルタイム通信状況:", status);
+
+            // INSERT または UPDATE イベントの解析
+            let updated = payload.new;
+            if (!updated || Object.keys(updated).length <= 2) {
+                // 🚨 【根本解決バイパス】Replica Identityが不完全でペイロードが空、もしくはIDのみの場合
+                // イベント情報から主キー(id)を特定、または全体から最新の変更レコードをバックグラウンドで超高速再フェッチ
+                console.warn("⚠️ ペイロード不完全を検知。データベースから実データを直接緊急追従取得します。");
+                const { data: fallbackRecords } = await sb.from('records').select('*').eq('program_id', activeProgramId);
+                if (fallbackRecords) {
+                    fallbackRecords.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model, true));
+                }
+                return;
+            }
+
+            // ペイロードが正常に届いている場合の通常反映処理
+            if (String(updated.program_id) === String(activeProgramId)) { 
+                updateCell(
+                    updated.link_id, 
+                    updated.phase, 
+                    updated.value !== null ? parseInt(updated.value, 10) : NaN, 
+                    updated.field_memo || "", 
+                    updated.center_memo || "", 
+                    updated.fpu_channel || "", 
+                    updated.mod_type || "", 
+                    updated.preset_type || "", 
+                    updated.ts_rate || "", 
+                    updated.tx_model || "", 
+                    updated.rx_model || "", 
+                    true
+                ); 
+            }
+        }).subscribe((status) => {
+            console.log("リアルタイムパイプライン接続状態:", status);
         });
     }
 
@@ -853,7 +860,6 @@
         const cell = row.querySelector(`.phase-${phase}`);
         if (!cell) return;
 
-        // 値が空、あるいは削除された場合は骨組みスケルトンに戻して早期リターン
         if (value === null || isNaN(value)) {
             updateCellSkeleton(linkId, phase);
             return;
