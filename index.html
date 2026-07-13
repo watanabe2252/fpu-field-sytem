@@ -548,14 +548,14 @@
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- 📊 CSV一括インポートブロック（ヘッダースキップ＆bigintバグ完全修正版） -->
+            <!-- 📊 CSV一括インポートブロック（1行目強制スキップ完全版） -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
                 </h2>
                 <div class="space-y-3 text-xs">
                     <p class="text-slate-400 font-bold leading-relaxed">
-                        フォーマット (UTF-8): 1行目に見出し（ヘッダー行）を入れても自動スキップされます。<br>
+                        フォーマット (UTF-8): エクセル作成時の1行目（見出し・ヘッダー行）はシステムが自動でスキップします。<br>
                         <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
                         ※カテゴリ: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">sub</code>(光)
                     </p>
@@ -1196,14 +1196,13 @@
 
         const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
         
-        // 手動追加時も bigint(数値型) IDを安全な連番で生成
         const newLinkId = 100000 + count + Math.floor(Math.random() * 1000);
         await sb.from('links').insert([{ id: newLinkId, program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
         document.getElementById('link-name').value = ''; 
         loadRegisteredLinks();
     }
 
-    // ⚡ CSV一括インポート（安全な100%数値連番ID・ダッシュボード追従再起動対応版）
+    // ⚡ CSV一括インポート（1行目強制スキップ完全修正版）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1231,7 +1230,6 @@
                 return;
             }
 
-            // 現在登録されている全体の受信点数をベースに、桁の丸まらない安全な連番ベース値をアロケーション
             const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
             let startOrder = count || 0;
 
@@ -1240,15 +1238,15 @@
             const validCategories = ['main', 'relay', 'sub'];
             const phases = ['tech', 'run', 'rehe', 'prod'];
 
-            // 🌟 桁丸まりを物理的に防ぐため、シンプルな6〜7桁の数値ベースを生成
             const idSeedBase = 100000 + startOrder; 
 
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
-                // 見出し行のスキップ判定
-                if (i === 0 && (columns[0].includes('受信点名') || columns[0].includes('名前') || columns[0].includes('対象回線'))) {
+                // 🌟 【最重要修正】i === 0 (1行目) は見出しの内容に関わらず無条件で100%スキップする
+                if (i === 0) {
+                    console.log("⚡ 1行目をヘッダー(見出し)行として強制スキップしました");
                     continue;
                 }
 
@@ -1262,8 +1260,6 @@
                 const rxModel = columns[7]?.trim() || "";
 
                 const finalCategory = validCategories.includes(category) ? category : 'sub';
-
-                // 🌟 【安全数値ID化】完全に100%丸まらない連番整数を生成
                 const numLinkId = idSeedBase + i;
 
                 linksBatch.push({
@@ -1275,13 +1271,12 @@
                 });
 
                 phases.forEach((phase, phaseIdx) => {
-                    // 各セルの主キーIDも、リンクIDの末尾にフェーズの連番(1〜4)を連結して完全な一貫性を担保
                     const numRecordId = parseInt(String(numLinkId) + String(phaseIdx + 1));
 
                     recordsBatch.push({
                         id: numRecordId,
                         program_id: activeProgramId,
-                        link_id: numLinkId,     // 外部キーもズレなく完全一致
+                        link_id: numLinkId,
                         phase: phase,
                         value: 60,
                         fpu_channel: fpuChannel,
@@ -1311,10 +1306,9 @@
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート完了！ ${linksBatch.length}件の受信点とスペックデータの生成が完全成功しました。`;
+                statusMsg.innerText = `✔️ インポート完了！ ${linksBatch.length}件の受信点マスターとスペックセルを正常に同期しました。`;
                 fileInput.value = "";
                 
-                // 🌟 インポート後にダッシュボードの表示テーブルを即座に再起動して描画させる
                 loadRegisteredLinks();
                 initDashboard(); 
             } else {
