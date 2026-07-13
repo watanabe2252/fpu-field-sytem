@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- 📦 外部ライブラリ CDN (WebSocketの挙動が最も安定しているバージョンに固定) -->
+    <!-- 📦 外部ライブラリ CDN (安定版に固定) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.7"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -634,6 +634,9 @@
     let currentVal = 60;
     let currentUserRole = "staff";
     let sortableInstances = { main: null, relay: null, sub: null };
+    
+    // 🚨 WebSocketの多重衝突を防ぐ唯一のグローバル通信インスタンス
+    let realtimeChannelInstance = null;
 
     window.addEventListener('load', async () => {
         handleResponsiveLayout();
@@ -765,6 +768,7 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
+    // ⚡ 大会選択直後に【一度だけ】安全にWebSocketチャネルを確立する関数
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
@@ -797,46 +801,49 @@
             await refreshDashboardData();
         }
 
-        // 🚨 【超強靭：インフラ同期エラー・データベース監視バグを完全回避する「ブロードキャスト」常時回線】
-        // データベースのWALログを監視する従来の「postgres_changes」を完全に捨て、
-        // 送信側のブラウザから直接パケットを投げ合う「broadcast」イベントリッスンに切り替えて、サーバーの不具合をバイパスします。
-        sb.removeAllChannels();
-        sb.channel('live-records-filter')
-        .on('broadcast', { event: 'record_update' }, payload => {
-            console.log("🚀 同期ブロードキャスト信号を受信:", payload);
-            const updated = payload.payload;
-            if (updated) {
-                updateCell(
-                    updated.link_id, 
-                    updated.phase, 
-                    parseInt(updated.value, 10), 
-                    updated.field_memo || "", 
-                    updated.center_memo || "", 
-                    updated.fpu_channel || "", 
-                    updated.mod_type || "", 
-                    updated.preset_type || "", 
-                    updated.ts_rate || "", 
-                    updated.tx_model || "", 
-                    updated.rx_model || "", 
-                    true // 点滅エフェクトを強制オン
-                );
-            }
-        })
-        .subscribe((status) => {
-            console.log("リアルタイム回線接続状況:", status);
-            const ind = document.getElementById('rt-indicator');
-            if(ind) {
-                if(status === 'SUBSCRIBED') {
-                    ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse";
-                    ind.title = "ブロードキャスト常時同期中";
-                } else {
-                    ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]";
-                    ind.title = "切断状態: " + status;
+        // 🚨 【最致命バグ完全修正】：非同期切断命令（removeAllChannels）との衝突を徹底排除
+        // すでに有効なチャンネルが存在していればそのまま使い回し、切断処理を絶対に噛ませない設計に切り替え
+        if (!realtimeChannelInstance) {
+            console.log("⚡ クリーンなWebSocket通信セッションを新規確立します");
+            realtimeChannelInstance = sb.channel('live-records-pipeline');
+            
+            realtimeChannelInstance.on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
+                console.log("⚡ WebSocketパケットを受信しました:", payload);
+                const updated = payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old;
+                if (!updated) return;
+
+                const hasRow = document.getElementById(`row-${updated.link_id}`);
+                const isCurrentProg = !updated.program_id || String(updated.program_id) === String(activeProgramId);
+
+                if (hasRow && isCurrentProg) { 
+                    if (payload.eventType === 'DELETE') { 
+                        updateCellSkeleton(updated.link_id, updated.phase); 
+                    } else { 
+                        updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
+                    }
                 }
-            }
-        });
+            })
+            .subscribe((status) => {
+                console.log("⚡ WebSocket通信ステータス通知:", status);
+                const ind = document.getElementById('rt-indicator');
+                if(ind) {
+                    if(status === 'SUBSCRIBED') {
+                        ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse";
+                        ind.title = "即時自動更新システム稼働中";
+                    } else {
+                        ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]";
+                        ind.title = "接続待機中: " + status;
+                    }
+                }
+            });
+        } else {
+            console.log("⚡ 既存の健全なWebSocket回線が維持されているため、切断せず再利用します");
+            // 大会が切り替わった場合でも即座に対応できるよう、初期化確認のために同期を実行
+            await refreshDashboardData();
+        }
     }
 
+    // タブ切り替え時はWebSocketを絶対に触らず、純粋なデータ最新化のみをバックグラウンド実行
     async function refreshDashboardData() {
         if (!sb || !activeProgramId) return;
         const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
@@ -1011,16 +1018,6 @@
             }
 
             promises.push(sb.from('records').upsert(payload, { onConflict: 'id' }));
-            
-            // 🚀 【インフラ回避ハック】データをクラウドに保存した直後、
-            // Supabaseのデータベース監視を通さず、WebSocketの専用ブロードキャストチャンネルへパケットを直接射出
-            setTimeout(() => {
-                sb.channel('live-records-filter').send({
-                    type: 'broadcast',
-                    event: 'record_update',
-                    payload: payload
-                });
-            }, 100);
         }
 
         const results = await Promise.all(promises);
@@ -1119,15 +1116,6 @@
         }
 
         await sb.from('records').upsert(payload, { onConflict: 'id' });
-
-        // 🚀 クイック更新側も直接ブロードキャストを撃ち出す
-        setTimeout(() => {
-            sb.channel('live-records-filter').send({
-                type: 'broadcast',
-                event: 'record_update',
-                payload: payload
-            });
-        }, 100);
 
         document.getElementById('dash-center-memo').value = "";
         document.getElementById('dash-channel-input').value = "";
@@ -1288,6 +1276,7 @@
         const targetView = document.getElementById(`view-${viewName}`);
         if (targetView) {
             targetView.classList.add('active');
+            // 🚨 チャンネル再利用モードになったため、ダッシュボード遷移時も安全に呼び出し可能
             if (viewName === 'dashboard') refreshDashboardData();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
