@@ -80,11 +80,6 @@
             background-color: #1e2538 !important;
             border: 2px dashed #38bdf8 !important;
         }
-        .sortable-ghost {
-            opacity: 0.3;
-            background-color: #1e2538 !important;
-            border: 2px dashed #38bdf8 !important;
-        }
         .sortable-chosen {
             background-color: #1a2035 !important;
         }
@@ -803,10 +798,10 @@
             }
         }
 
-        // ⚡ 【超コア修正：不完全パケット・FK依存問題を100%解決した無敵リスナー】
+        // ⚡ 【インフラ物理構造適合型リアルタイムパイプライン】
         sb.removeAllChannels();
         sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, async payload => {
-            console.log("WebSocketイベントを受信しました:", payload);
+            console.log("リアルタイム WebSocketシグナル受信:", payload);
             
             if (payload.eventType === 'DELETE') {
                 const oldData = payload.old;
@@ -819,12 +814,12 @@
             const updated = payload.new;
             if (!updated) return;
 
-            // 🚨 根本解決：不完全なパケット（program_idが含まれない）であっても、
-            // 画面上に存在する回線ID（link_id）に一致すれば、クラウドから最新の正しいレコード状態を即時裏取得して完全同期をかける
+            // 🚨 【核心の解決策】payload.new 内に `program_id` が含まれていないインフラ制約があるため、
+            // イベントを検知した瞬間、クラウドのDBから直接1レコードを単発強制フェッチして完全に上書きする
             const targetRow = document.getElementById(`row-${updated.link_id}`);
             if (targetRow) {
-                const { data: latestRec } = await sb.from('records').select('*').eq('id', updated.id).maybeSingle();
-                if (latestRec && String(latestRec.program_id) === String(activeProgramId)) {
+                const { data: latestRec, error } = await sb.from('records').select('*').eq('id', updated.id).maybeSingle();
+                if (!error && latestRec && String(latestRec.program_id) === String(activeProgramId)) {
                     updateCell(
                         latestRec.link_id, 
                         latestRec.phase, 
@@ -837,12 +832,12 @@
                         latestRec.ts_rate || "", 
                         latestRec.tx_model || "", 
                         latestRec.rx_model || "", 
-                        true // ピカッと光らせるエフェクト
+                        true // 他端末からの更新を検知して青枠をフラッシュ
                     );
                 }
             }
         }).subscribe((status) => {
-            console.log("Realtime subscription tunnel status:", status);
+            console.log("Realtime 接続ステータス:", status);
         });
     }
 
@@ -857,12 +852,7 @@
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
         const cell = row.querySelector(`.phase-${phase}`);
-        if (!cell) return;
-
-        if (value === null || isNaN(value)) {
-            updateCellSkeleton(linkId, phase);
-            return;
-        }
+        if (!cell || isNaN(value)) return;
 
         let statusColor = 'text-accentGreen'; let bgStyle = 'bg-emerald-950/20 border-emerald-500/20';
         if (value < 35) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
