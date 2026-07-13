@@ -814,27 +814,23 @@
             const updated = payload.new;
             if (!updated) return;
 
-            // 🚨 【核心の解決策】payload.new 内に `program_id` が含まれていないインフラ制約があるため、
-            // イベントを検知した瞬間、クラウドのDBから直接1レコードを単発強制フェッチして完全に上書きする
-            const targetRow = document.getElementById(`row-${updated.link_id}`);
-            if (targetRow) {
-                const { data: latestRec, error } = await sb.from('records').select('*').eq('id', updated.id).maybeSingle();
-                if (!error && latestRec && String(latestRec.program_id) === String(activeProgramId)) {
-                    updateCell(
-                        latestRec.link_id, 
-                        latestRec.phase, 
-                        latestRec.value !== null ? parseInt(latestRec.value, 10) : NaN, 
-                        latestRec.field_memo || "", 
-                        latestRec.center_memo || "", 
-                        latestRec.fpu_channel || "", 
-                        latestRec.mod_type || "", 
-                        latestRec.preset_type || "", 
-                        latestRec.ts_rate || "", 
-                        latestRec.tx_model || "", 
-                        latestRec.rx_model || "", 
-                        true // 他端末からの更新を検知して青枠をフラッシュ
-                    );
-                }
+            // 🚨 PostgreSQL側の「REPLICA IDENTITY FULL」設定と組み合わせることで、
+            // updated.program_id に文字列値が100%確実に乗り、このフィルター条件が完全自動動作するようになります。
+            if (String(updated.program_id) === String(activeProgramId)) {
+                updateCell(
+                    updated.link_id, 
+                    updated.phase, 
+                    updated.value !== null ? parseInt(updated.value, 10) : NaN, 
+                    updated.field_memo || "", 
+                    updated.center_memo || "", 
+                    updated.fpu_channel || "", 
+                    updated.mod_type || "", 
+                    updated.preset_type || "", 
+                    updated.ts_rate || "", 
+                    updated.tx_model || "", 
+                    updated.rx_model || "", 
+                    true // 他端末からの更新を検知して青枠をフラッシュ
+                );
             }
         }).subscribe((status) => {
             console.log("Realtime 接続ステータス:", status);
@@ -889,7 +885,7 @@
             const box = cell.querySelector('.cell-box');
             if(box) {
                 box.style.outline = "2px solid #38bdf8";
-                setTimeout(() => { box.style.outline = "2px solid transparent"; }, 1000);
+                setTimeout(() => { box.style.outline = "none"; }, 1000);
             }
         }
     }
@@ -964,6 +960,7 @@
         document.getElementById('db-value').innerText = currentVal;
     }
 
+    // ⚡ 【一括反映＆主キー競合排除の超高速同期処理】
     async function submitToSupabase() {
         const linkId = document.getElementById('link-select').value;
         const currentPhase = document.getElementById('phase-select').value;
@@ -983,20 +980,22 @@
             rx_model: document.getElementById('input-rx-model').value.trim()
         };
 
+        // 🚨 多重登録・クエリ無駄を無くすため、全フェーズの状態を一発で先読み
+        const { data: matches } = await sb.from('records')
+            .select('id, phase, value')
+            .eq('program_id', activeProgramId)
+            .eq('link_id', linkId);
+
         let promises = [];
         const allPhases = batchAll ? ['tech', 'run', 'rehe', 'prod'] : [currentPhase];
 
         for (const phase of allPhases) {
-            const { data: match } = await sb.from('records')
-                .select('id, value')
-                .eq('program_id', activeProgramId)
-                .eq('link_id', linkId)
-                .eq('phase', phase)
-                .maybeSingle();
-
+            const match = matches ? matches.find(m => m.phase === phase) : null;
             let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (match ? match.value : 60);
             
             let payload = { ...baseRecord, phase: phase, value: valToSubmit };
+            
+            // 既存レコードがあれば、完全にそのIDを上書きするようマージ
             if (match && match.id) {
                 payload.id = match.id;
             }
