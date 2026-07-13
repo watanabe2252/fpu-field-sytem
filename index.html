@@ -763,6 +763,7 @@
         initDashboard(); loadDashboardLinkSelect();
     }
 
+    // ⚡ 大会（番組）選択直後に【1回だけ】実行し、常時WebSocket接続を確立する
     async function initDashboard() {
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
@@ -792,49 +793,36 @@
                 }
             });
 
-            const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
-            if (records) { 
-                records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model)); 
-            }
+            // データの初期ロード
+            await refreshDashboardData();
         }
 
-        // ⚡ 【インフラ物理構造適合型リアルタイムパイプライン】
+        // 🚨 【最重要バグ修正】
+        // タブ切り替え時に毎度チャネルを破棄・再接続すると、非同期処理の競合でWebSocket購読がサイレントフリーズします。
+        // ここで唯一無二のクリーンな常時常駐チャネルを1回だけ確立します。
         sb.removeAllChannels();
-        sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, async payload => {
-            console.log("リアルタイム WebSocketシグナル受信:", payload);
-            
-            if (payload.eventType === 'DELETE') {
-                const oldData = payload.old;
-                if (oldData && oldData.link_id && oldData.phase) {
-                    updateCellSkeleton(oldData.link_id, oldData.phase);
+        sb.channel('live-records-filter').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
+            console.log("リアルタイム変更をキャッチ:", payload);
+            const updated = payload.new || payload.old;
+            if (updated && String(updated.program_id) === String(activeProgramId)) { 
+                if (payload.eventType === 'DELETE') { 
+                    updateCellSkeleton(updated.link_id, updated.phase); 
+                } else { 
+                    updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
                 }
-                return;
-            }
-
-            const updated = payload.new;
-            if (!updated) return;
-
-            // 🚨 PostgreSQL側の「REPLICA IDENTITY FULL」設定と組み合わせることで、
-            // updated.program_id に文字列値が100%確実に乗り、このフィルター条件が完全自動動作するようになります。
-            if (String(updated.program_id) === String(activeProgramId)) {
-                updateCell(
-                    updated.link_id, 
-                    updated.phase, 
-                    updated.value !== null ? parseInt(updated.value, 10) : NaN, 
-                    updated.field_memo || "", 
-                    updated.center_memo || "", 
-                    updated.fpu_channel || "", 
-                    updated.mod_type || "", 
-                    updated.preset_type || "", 
-                    updated.ts_rate || "", 
-                    updated.tx_model || "", 
-                    updated.rx_model || "", 
-                    true // 他端末からの更新を検知して青枠をフラッシュ
-                );
             }
         }).subscribe((status) => {
-            console.log("Realtime 接続ステータス:", status);
+            console.log("WebSocketパイプライン常時接続ステータス:", status);
         });
+    }
+
+    // ⚡ タブを切り替えて戻ってきた時は、WebSocket接続を壊さず「純粋なデータ上書き」だけを実行
+    async function refreshDashboardData() {
+        if (!sb || !activeProgramId) return;
+        const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
+        if (records) { 
+            records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model)); 
+        }
     }
 
     function updateCellSkeleton(linkId, phase) {
@@ -848,7 +836,12 @@
         const row = document.getElementById(`row-${linkId}`);
         if (!row) return;
         const cell = row.querySelector(`.phase-${phase}`);
-        if (!cell || isNaN(value)) return;
+        if (!cell) return;
+
+        if (value === null || isNaN(value)) {
+            updateCellSkeleton(linkId, phase);
+            return;
+        }
 
         let statusColor = 'text-accentGreen'; let bgStyle = 'bg-emerald-950/20 border-emerald-500/20';
         if (value < 35) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
@@ -885,7 +878,7 @@
             const box = cell.querySelector('.cell-box');
             if(box) {
                 box.style.outline = "2px solid #38bdf8";
-                setTimeout(() => { box.style.outline = "none"; }, 1000);
+                setTimeout(() => { box.style.outline = "2px solid transparent"; }, 1000);
             }
         }
     }
@@ -960,7 +953,6 @@
         document.getElementById('db-value').innerText = currentVal;
     }
 
-    // ⚡ 【一括反映＆主キー競合排除の超高速同期処理】
     async function submitToSupabase() {
         const linkId = document.getElementById('link-select').value;
         const currentPhase = document.getElementById('phase-select').value;
@@ -980,22 +972,20 @@
             rx_model: document.getElementById('input-rx-model').value.trim()
         };
 
-        // 🚨 多重登録・クエリ無駄を無くすため、全フェーズの状態を一発で先読み
-        const { data: matches } = await sb.from('records')
-            .select('id, phase, value')
-            .eq('program_id', activeProgramId)
-            .eq('link_id', linkId);
-
         let promises = [];
         const allPhases = batchAll ? ['tech', 'run', 'rehe', 'prod'] : [currentPhase];
 
         for (const phase of allPhases) {
-            const match = matches ? matches.find(m => m.phase === phase) : null;
+            const { data: match } = await sb.from('records')
+                .select('id, value')
+                .eq('program_id', activeProgramId)
+                .eq('link_id', linkId)
+                .eq('phase', phase)
+                .maybeSingle();
+
             let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (match ? match.value : 60);
             
             let payload = { ...baseRecord, phase: phase, value: valToSubmit };
-            
-            // 既存レコードがあれば、完全にそのIDを上書きするようマージ
             if (match && match.id) {
                 payload.id = match.id;
             }
@@ -1102,7 +1092,8 @@
 
         document.getElementById('dash-center-memo').value = "";
         document.getElementById('dash-channel-input').value = "";
-        initDashboard();
+        // 🚨 リアルタイムがONなので、DOM全消去を伴うinitDashboard()ではなく、純粋な再ロードを実行
+        await refreshDashboardData();
     }
 
     async function loadRegisteredLinks() {
@@ -1259,7 +1250,8 @@
         const targetView = document.getElementById(`view-${viewName}`);
         if (targetView) {
             targetView.classList.add('active');
-            if (viewName === 'dashboard') initDashboard();
+            // 🚨 【大改修】WebSocketの常時接続を切断・再接続して自壊させるのをやめ、純粋なデータ最新化処理のみをキックします
+            if (viewName === 'dashboard') refreshDashboardData();
             if (viewName === 'input') loadInputViewSequence();
             if (viewName === 'maintenance') loadRegisteredLinks();
             if (viewName === 'useradmin') loadUserRoleList();
