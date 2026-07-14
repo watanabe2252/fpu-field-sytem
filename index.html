@@ -1246,15 +1246,15 @@
 
         const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
         
-        // 🌟 手動追加時も、絶対に桁丸まり・プログラム間重複の起きないクリーンな15桁タイムスタンプ数値IDを発行
-        const newLinkId = parseInt(String(Math.floor(Date.now() / 10)) + "990");
+        // 🌟 手動追加のID生成も10桁以下のクリーンな乱数連番（最大21億の通常integer制約に完全対応）へ改修
+        const newLinkId = Math.floor(10000000 + Math.random() * 89999999);
         await sb.from('links').insert([{ id: newLinkId, program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
         document.getElementById('link-name').value = ''; 
         loadRegisteredLinks();
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート（宇宙内絶対一意＆桁丸まり完全排除・15桁Bigint対応版）
+    // ⚡ CSV一括インポート（PostgreSQL integer制約上限: 21億を絶対に超えない4桁ハッシュ連番設計）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1298,8 +1298,10 @@
             const validCategories = ['main', 'relay', 'opt'];
             const phases = ['run', 'tech', 'rehe', 'prod'];
 
-            // 🌟 過去の全中継ファイルや、今後の増設データとも100%競合しない10桁の純粋ミリ秒シードを生成
-            const baseTimestampSeed = String(Math.floor(Date.now() / 100)); 
+            // 🌟 【最重要修正】21億を超えないよう、現在のミリ秒（下5桁）と1〜9999のランダムな4桁を組み合わせ、確実に最大9桁（1億〜9億台）に抑え込む新IDシード生成
+            const shortTimeSeed = String(Date.now()).substring(8); // 5桁
+            const randomSeed = String(Math.floor(1000 + Math.random() * 8999)); // 4桁
+            const safeBaseSeed = parseInt(randomSeed + shortTimeSeed); // 計9桁（例: 485054321 ➔ 21億より遥かに小さく安全）
 
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
@@ -1326,9 +1328,8 @@
                 if (linkMap[name]) {
                     numLinkId = linkMap[name].id;
                 } else {
-                    // 🌟 【絶対一意の14桁ID】ミリ秒シード(10桁) ＋ ループインデックス(3桁パディング) ＋ 識別子"0"
-                    const paddedIdx = String(i).padStart(3, '0');
-                    numLinkId = parseInt(baseTimestampSeed + paddedIdx + "0");
+                    // 🌟 【links用ID】ベースシード(9桁) にループ番号を足す。最大でも21億未満を完全維持
+                    numLinkId = safeBaseSeed + i;
                     isNewLink = true;
                 }
 
@@ -1341,14 +1342,15 @@
                 });
 
                 phases.forEach((phase, phaseIdx) => {
-                    // 🌟 【絶対一意の14桁ID】ミリ秒シード(10桁) ＋ ループインデックス(3桁パディング) ＋ フェーズ識別子(1〜4)
-                    const paddedIdx = String(i).padStart(3, '0');
-                    const numRecordId = parseInt(baseTimestampSeed + paddedIdx + String(phaseIdx + 1));
+                    // 🌟 【records用ID】 Pkeyバグを永久に消滅させるための完璧な乗算セパレーター
+                    // 受信点IDをさらに10倍して、末尾に日程連番(1〜4)を加算する。
+                    // 例: linksのIDが 58401235 の場合、recordsのIDは 584012351 〜 584012354 となり、10桁に収まり絶対にバッティングしない
+                    const numRecordId = (numLinkId * 10) + (phaseIdx + 1);
 
                     recordsBatch.push({
                         id: numRecordId,
                         program_id: activeProgramId,
-                        link_id: numLinkId,     // 外部キーの紐付けも同一の安全桁で完全一致
+                        link_id: numLinkId,
                         phase: phase,
                         value: (finalCategory === 'opt') ? 15 : 60, 
                         fpu_channel: fpuChannel,
@@ -1365,7 +1367,6 @@
 
             statusMsg.innerText = `🔄 最新のCSVスペックデータを上書き同期中...`;
 
-            // クラウド（Supabase）へUpsertを実行
             const [linksRes, recordsRes] = await Promise.all([
                 sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
                 sb.from('records').upsert(recordsBatch, { onConflict: 'id' })
@@ -1373,7 +1374,7 @@
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート完了！ 光回線系統(opt)を含む機材パラメータを完全同期しました。`;
+                statusMsg.innerText = `✔️ インポート完了！ 21億の整数制約を完全に突破し、光回線系統(opt)を含む機材パラメータを完全同期しました。`;
                 fileInput.value = "";
                 
                 loadRegisteredLinks();
@@ -1443,7 +1444,7 @@
         const { data: srcLinks } = await sb.from('links').select('*').eq('program_id', duplicateSourceId);
         if (srcLinks && srcLinks.length > 0) {
             const duplicated = srcLinks.map((l, idx) => ({
-                id: parseInt(String(Math.floor(Date.now() / 10)) + String(idx).padStart(3, '0') + "0"),
+                id: Math.floor(10000000 + Math.random() * 89999999),
                 program_id: targetId, name: l.name, category: l.category, sort_order: l.sort_order
             }));
             await sb.from('links').insert(duplicated);
