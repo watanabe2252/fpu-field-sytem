@@ -569,7 +569,7 @@
                 </div>
             </div>
 
-            <!-- 📊 CSV一括インポートブロック -->
+            <!-- 📊 CSV一括インポートブロック (CSV内重複自動クレンジング強化版) -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
@@ -632,7 +632,7 @@
     </div>
 
     <!-- ===================================================
-       👥 ビュー4: ユーザーアカウント管理者画面
+       🔐 管理者画面
        =================================================== -->
     <div id="view-useradmin" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
@@ -650,7 +650,7 @@
     </div>
 
     <!-- ===================================================
-       🗺️ 下部グローバルナビゲーションバー
+       🗺️ 下部ナビゲーション
        =================================================== -->
     <div class="bottom-nav fixed bottom-0 left-0 w-full h-[75px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,4px)] pt-2 justify-between items-center shadow-2xl">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
@@ -664,9 +664,6 @@
         </button>
     </div>
 
-    <!-- ===================================================
-       ⚙️ システムメインロジックスクリプト
-       =================================================== -->
 <script>
     const SUPABASE_URL = "https://iyzadjupyejeyeeyvwqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5emFkanVweWVqZXllZXl2d3FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1OTE2NjgsImV4cCI6MjA5OTE2NzY2OH0.T6oXWP6s35wg77Nzuez7zrWVg49n6FFI0NzkW9z6QCQ";
@@ -860,7 +857,7 @@
                     tr.id = `row-${link.id}`;
                     tr.className = "hover:bg-slate-800/20 transition-colors";
                     tr.innerHTML = `
-                        <td class="text-left font-black py-3 text-slate-200 link-label text-sm pr-1 pl-2.5 leading-tight">${formatLinkLabel(name)}</td>
+                        <td class="text-left font-black py-3 text-slate-200 link-label text-sm pr-1 pl-2.5 leading-tight">${formatLinkLabel(link.name)}</td>
                         <td class="phase-run p-1 align-top"></td>
                         <td class="phase-tech p-1 align-top"></td>
                         <td class="phase-rehe p-1 align-top"></td>
@@ -1244,7 +1241,6 @@
         const cat = document.getElementById('link-category').value;
         if (!name) return;
 
-        // 🌟 クラウド上の最大IDを追跡し、競合のない安全な単調増加連番IDを発行
         const { data: maxLink } = await sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
         const currentMaxId = maxLink ? parseInt(maxLink.id, 10) : 1000;
         const newLinkId = currentMaxId + 1;
@@ -1256,7 +1252,7 @@
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート（データベースのグローバル最大値カウントアップ完全上書き同期ロジック）
+    // ⚡ CSV一括インポート（同名回線の一括重複自動クレンジングマージ仕様）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1286,14 +1282,12 @@
 
             statusMsg.innerText = "🔄 データベースから最新のクリーン連番シードを取得中...";
 
-            // 🌟 【本丸バグ修正】全テーブルのグローバル最大値をその場で1発読み込む
             const [maxLinkRes, maxRecordRes, existingLinksRes] = await Promise.all([
                 sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
                 sb.from('records').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
                 sb.from('links').select('*').eq('program_id', activeProgramId)
             ]);
 
-            // 万が一DBが空の時の安全フォールバックの初期カウントシード
             let linkIdCounter = maxLinkRes.data ? parseInt(maxLinkRes.data.id, 10) + 1 : 10000;
             let recordIdCounter = maxRecordRes.data ? parseInt(maxRecordRes.data.id, 10) + 1 : 50000;
 
@@ -1310,13 +1304,24 @@
             const validCategories = ['main', 'relay', 'opt'];
             const phases = ['run', 'tech', 'rehe', 'prod'];
 
+            // 🌟 【最重要修正】CSV内の同一名称データを一時的に記憶・排除するためのマージ用マップ
+            const csvDuplicateCheckMap = {};
+
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
-                if (i === 0) continue; 
+                if (i === 0) continue; // ヘッダー行をスキップ
 
                 const name = columns[0]?.trim() || "";
+                
+                // 🌟 もし同じ一括処理内で、すでに同名の受信点が処理されていたら即座にスキップして衝突を回避
+                if (csvDuplicateCheckMap[name]) {
+                    console.log(`⚠️ CSV内の ${i + 1} 行目で同一受信点名「${name}」の重複を検知したため、データベース保護のため自動マージ（スキップ）しました。`);
+                    continue;
+                }
+                csvDuplicateCheckMap[name] = true;
+
                 let category = columns[1]?.trim().toLowerCase() || "opt";
                 if(category === 'sub') category = 'opt'; 
 
@@ -1335,7 +1340,6 @@
                 if (linkMap[name]) {
                     numLinkId = linkMap[name].id;
                 } else {
-                    // 新規なら競合の絶対起きない最大連番カウンターを割り当て
                     numLinkId = linkIdCounter++;
                     isNewLink = true;
                 }
@@ -1348,21 +1352,16 @@
                     sort_order: isNewLink ? startOrder++ : linkMap[name].sort_order
                 });
 
-                // 各フェーズのスペックセルの登録
                 for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
                     const phase = phases[phaseIdx];
-                    
-                    // すでにこの回線の該当フェーズが存在するかをチェック
                     let targetRecordId;
                     
-                    // 以前の古い計算式「(numLinkId * 10) + フェーズ」で作成した既存セルがあれば探す
                     const oldStyleId = (numLinkId * 10) + (phaseIdx + 1);
                     const idxInCache = cachedRecords.findIndex(r => parseInt(r.id, 10) === oldStyleId || (String(r.link_id) === String(numLinkId) && r.phase === phase));
                     
                     if (idxInCache !== -1) {
                         targetRecordId = cachedRecords[idxInCache].id;
                     } else {
-                        // 新規作成セルはグローバルカウンターから確実にインクリメント発行
                         targetRecordId = recordIdCounter++;
                     }
 
@@ -1393,7 +1392,7 @@
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート大成功！ クラウド内のすべての型競合・衝突バグを完全解消しました。`;
+                statusMsg.innerText = `✔️ インポート大成功！ CSV内の同名回線をクレンジング統合し、正常に同期しました。`;
                 fileInput.value = "";
                 
                 loadRegisteredLinks();
@@ -1463,7 +1462,7 @@
         const { data: srcLinks } = await sb.from('links').select('*').eq('program_id', duplicateSourceId);
         if (srcLinks && srcLinks.length > 0) {
             const duplicated = srcLinks.map((l, idx) => ({
-                id: parseInt(String(Math.floor(Date.now() / 10)) + String(idx).padStart(3, '0') + "0"),
+                id: Math.floor(10000000 + Math.random() * 89999999),
                 program_id: targetId, name: l.name, category: l.category, sort_order: l.sort_order
             }));
             await sb.from('links').insert(duplicated);
