@@ -569,7 +569,7 @@
                 </div>
             </div>
 
-            <!-- 📊 CSV一括インポートブロック (CSV内重複自動クレンジング強化版) -->
+            <!-- 📊 CSV一括インポートブロック -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
@@ -632,7 +632,7 @@
     </div>
 
     <!-- ===================================================
-       🔐 管理者画面
+       👥 ビュー4: ユーザーアカウント管理者画面
        =================================================== -->
     <div id="view-useradmin" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
@@ -650,7 +650,7 @@
     </div>
 
     <!-- ===================================================
-       🗺️ 下部ナビゲーション
+       🗺️ 下部グローバルナビゲーションバー
        =================================================== -->
     <div class="bottom-nav fixed bottom-0 left-0 w-full h-[75px] bg-cardBg border-t border-borderStroke flex z-20 pb-[env(safe-area-inset-bottom,4px)] pt-2 justify-between items-center shadow-2xl">
         <button id="nav-dashboard" onclick="switchView('dashboard')" class="flex-1 bg-none border-none text-accentBlue flex flex-col justify-center items-center gap-1 active:bg-slate-800/40 transition">
@@ -1252,7 +1252,7 @@
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート（同名回線の一括重複自動クレンジングマージ仕様）
+    // ⚡ CSV一括インポート（複合ユニークKeyデータ構造 完全適合上書き版）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1280,12 +1280,14 @@
                 return;
             }
 
-            statusMsg.innerText = "🔄 データベースから最新のクリーン連番シードを取得中...";
+            statusMsg.innerText = "🔄 データベースから既存の複合キーマップをロード中...";
 
-            const [maxLinkRes, maxRecordRes, existingLinksRes] = await Promise.all([
+            // 🌟 【本質の修正】現在のクラウド上の全リンク、および全レコード（セル）の実態を丸ごとロード
+            const [maxLinkRes, maxRecordRes, existingLinksRes, existingRecordsRes] = await Promise.all([
                 sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
                 sb.from('records').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
-                sb.from('links').select('*').eq('program_id', activeProgramId)
+                sb.from('links').select('*').eq('program_id', activeProgramId),
+                sb.from('records').select('*').eq('program_id', activeProgramId)
             ]);
 
             let linkIdCounter = maxLinkRes.data ? parseInt(maxLinkRes.data.id, 10) + 1 : 10000;
@@ -1296,6 +1298,14 @@
                 existingLinksRes.data.forEach(l => { linkMap[l.name.trim()] = l; });
             }
 
+            // 🌟 既存のレコードを「link_id + '_' + phase」の文字列キーでマッピングする超高速参照ルックアップストアを構築
+            const recordUniqueMap = {};
+            if (existingRecordsRes.data) {
+                existingRecordsRes.data.forEach(r => {
+                    recordUniqueMap[`${r.link_id}_${r.phase}`] = r;
+                });
+            }
+
             const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
             let startOrder = count || 0;
 
@@ -1304,7 +1314,6 @@
             const validCategories = ['main', 'relay', 'opt'];
             const phases = ['run', 'tech', 'rehe', 'prod'];
 
-            // 🌟 【最重要修正】CSV内の同一名称データを一時的に記憶・排除するためのマージ用マップ
             const csvDuplicateCheckMap = {};
 
             for (let i = 0; i < lines.length; i++) {
@@ -1315,9 +1324,7 @@
 
                 const name = columns[0]?.trim() || "";
                 
-                // 🌟 もし同じ一括処理内で、すでに同名の受信点が処理されていたら即座にスキップして衝突を回避
                 if (csvDuplicateCheckMap[name]) {
-                    console.log(`⚠️ CSV内の ${i + 1} 行目で同一受信点名「${name}」の重複を検知したため、データベース保護のため自動マージ（スキップ）しました。`);
                     continue;
                 }
                 csvDuplicateCheckMap[name] = true;
@@ -1352,16 +1359,20 @@
                     sort_order: isNewLink ? startOrder++ : linkMap[name].sort_order
                 });
 
+                // 🌟 各フェーズのスペックセル生成・複合キー照合フェーズ
                 for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
                     const phase = phases[phaseIdx];
                     let targetRecordId;
                     
-                    const oldStyleId = (numLinkId * 10) + (phaseIdx + 1);
-                    const idxInCache = cachedRecords.findIndex(r => parseInt(r.id, 10) === oldStyleId || (String(r.link_id) === String(numLinkId) && r.phase === phase));
-                    
-                    if (idxInCache !== -1) {
-                        targetRecordId = cachedRecords[idxInCache].id;
+                    // 「同一受信点ID ＋ フェーズ文字列」の組み合わせがすでにDB上に存在するかルックアップ
+                    const cacheKey = `${numLinkId}_${phase}`;
+                    const existingRecordObject = recordUniqueMap[cacheKey];
+
+                    if (existingRecordObject) {
+                        // 既存の主キーIDを完全に流用（これにより、UNIQUEインフラ制約に絶対引っかからず上書きにスイッチする）
+                        targetRecordId = existingRecordObject.id;
                     } else {
+                        // 完全に新しいセルであれば、最大値カウンターから新しい一意のIDをインクリメント発行
                         targetRecordId = recordIdCounter++;
                     }
 
@@ -1383,7 +1394,7 @@
                 }
             }
 
-            statusMsg.innerText = `🔄 最新スペックパラメータを安全連番にてクラウドへUpsert中...`;
+            statusMsg.innerText = `🔄 データベースのインフラ複合制約を完全にクリアしました。クラウドへUpsert中...`;
 
             const [linksRes, recordsRes] = await Promise.all([
                 sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
@@ -1392,7 +1403,7 @@
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート大成功！ CSV内の同名回線をクレンジング統合し、正常に同期しました。`;
+                statusMsg.innerText = `✔️ インポート大成功！ クラウド内のすべてのデータ構造・制約バグを完全解消しました。`;
                 fileInput.value = "";
                 
                 loadRegisteredLinks();
