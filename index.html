@@ -252,7 +252,7 @@
 
     <!-- ===================================================
        ➕ 新規番組作成モーダル
-       ================================================== -->
+       =================================================== -->
     <div id="create-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
             <h3 class="text-sm font-black text-accentBlue flex items-center gap-2">
@@ -301,31 +301,6 @@
     </div>
 
     <!-- ===================================================
-       👯 番組複製 (コピー) モーダル
-       =================================================== -->
-    <div id="duplicate-program-modal" class="fixed inset-0 bg-bgDark/80 backdrop-blur-sm z-[2500] hidden items-center justify-center p-4">
-        <div class="w-full max-w-sm bg-cardBg border border-borderStroke p-6 rounded-2xl shadow-2xl space-y-4">
-            <h3 class="text-sm font-black text-amber-400 flex items-center gap-2">
-                <i class="fas fa-copy"></i> 番組ファイルの複製 (構造コピー)
-            </h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">新規作成する番組ID (半角英数字)</label>
-                    <input type="text" id="dup-program-id" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-mono">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">新規作成する番組・大会名</label>
-                    <input type="text" id="dup-program-title" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue">
-                </div>
-            </div>
-            <div class="flex gap-3 justify-end pt-2 text-xs font-bold">
-                <button onclick="closeDuplicateModal()" class="border border-borderStroke text-slate-400 px-4 py-2.5 rounded-xl hover:bg-slate-800 transition">キャンセル</button>
-                <button onclick="submitDuplicateProgram()" class="bg-amber-400 text-bgDark px-5 py-2.5 rounded-xl hover:bg-amber-500 transition">複製を実行</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===================================================
        📱 共通アプリケーションヘッダー
        =================================================== -->
     <div class="app-header px-4 pb-3 border-b border-borderStroke flex flex-row justify-between items-center shadow-lg">
@@ -335,7 +310,6 @@
         </div>
         
         <div class="flex items-center gap-2 shrink-0">
-            <!-- ⚡ リアルタイム通信インジケーターランプ -->
             <div id="rt-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all duration-300" title="Realtime Status"></div>
             <div id="user-role-badge" class="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke">STAFF</div>
             <button onclick="location.reload()" class="text-xs bg-slate-800 border border-borderStroke text-slate-400 px-2.5 py-1 rounded-md active:bg-slate-700 transition font-bold text-center">大会変更</button>
@@ -346,18 +320,47 @@
        📊 ビュー1: ダッシュボード
        =================================================== -->
     <div id="view-dashboard" class="view-content active px-4 space-y-4 max-w-xl mx-auto transition-all">
-        <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl">
-            <div class="flex flex-col md:flex-row md:items-center gap-3">
+        
+        <!-- 🎛️ 動的判定しきい値カスタマイザー ＆ クイック更新エリア -->
+        <div class="bg-cardBg border border-borderStroke rounded-2xl p-4 shadow-xl space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borderStroke/40 pb-3">
+                <div class="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-sliders-h text-accentBlue"></i> 電界アラートしきい値の任意変更設定
+                </div>
+                <div class="flex items-center gap-4 text-xs font-mono font-bold bg-bgDark/60 px-3 py-1.5 rounded-xl border border-borderStroke/60">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> 障害: <span id="label-th-low" class="text-rose-400">35</span>dB未満
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span> 注意: <span id="label-th-mid" class="text-amber-400">35〜50</span>dB
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-accentGreen"></span> 良好: <span id="label-th-high" class="text-accentGreen">50</span>dB以上
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div class="space-y-1">
+                    <div class="flex justify-between font-bold text-slate-400"><span>🚨 障害判定境界 (これ未満で赤)</span><span class="font-mono text-rose-400" id="val-th-low">35 dB</span></div>
+                    <input type="range" id="slider-th-low" min="10" max="60" value="35" oninput="updateColorThresholds()" class="w-full h-1.5 bg-bgDark rounded-lg appearance-none cursor-pointer accent-rose-500">
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between font-bold text-slate-400"><span>⚠️ 良好判定ライン (これ以上で緑)</span><span class="font-mono text-accentGreen" id="val-th-high">50 dB</span></div>
+                    <input type="range" id="slider-th-high" min="40" max="90" value="50" oninput="updateColorThresholds()" class="w-full h-1.5 bg-bgDark rounded-lg appearance-none cursor-pointer accent-accentGreen">
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center gap-3 pt-2 border-t border-borderStroke/30">
                 <div class="shrink-0 flex items-center gap-2 text-xs font-black text-accentBlue uppercase tracking-wider">
-                    <i class="fas fa-comment-alt text-accentBlue animate-pulse"></i> クイックセンターメモ・Ch更新
+                    <i class="fas fa-comment-alt animate-pulse"></i> センターメモ・Ch更新
                 </div>
                 <div class="flex-1 flex flex-wrap gap-2">
                     <select id="dash-link-select" class="bg-bgDark border border-borderStroke rounded-xl px-2 py-2 text-white text-xs outline-none focus:border-accentBlue font-bold min-w-[120px] flex-1 md:flex-none"></select>
                     <select id="dash-phase-select" class="bg-bgDark border border-borderStroke rounded-xl px-2 py-2 text-white text-xs outline-none focus:border-accentBlue font-bold min-w-[80px]">
+                        <option value="run" selected>走行</option>
                         <option value="tech">技術</option>
-                        <option value="run">走行</option>
                         <option value="rehe">リハ</option>
-                        <option value="prod" selected>本番</option>
+                        <option value="prod">本番</option>
                     </select>
                     <input type="text" id="dash-channel-input" placeholder="Ch (例: C2H)" class="bg-bgDark border border-borderStroke rounded-xl px-3 py-2 text-amber-400 text-xs font-black outline-none focus:border-accentBlue uppercase placeholder-slate-600 w-[90px]">
                     <input type="text" id="dash-center-memo" placeholder="状況メモを入力" class="flex-1 bg-bgDark border border-borderStroke rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-accentBlue placeholder-slate-600 transition-all min-w-[150px]">
@@ -366,21 +369,20 @@
                     </button>
                 </div>
             </div>
-            <div id="dash-memo-status" class="text-xs font-bold text-accentGreen mt-1 empty:hidden"></div>
         </div>
 
         <div class="grid grid-cols-1 gap-6">
-            <!-- カテゴリ1: 本線系統 -->
+            <!-- カテゴリ1: main（本線系統） -->
             <div class="table-container no-scrollbar">
                 <h2 class="maint-group-title text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
-                    <i class="fas fa-broadcast-tower"></i> センター受け
+                    <i class="fas fa-broadcast-tower"></i> 本線系統 (main)
                 </h2>
                 <table>
                     <thead>
                         <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
                             <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5 text-accentOrange">走行</th>
                             <th class="pb-1.5">技術</th>
-                            <th class="pb-1.5">走行</th>
                             <th class="pb-1.5">リハ</th>
                             <th class="pb-1.5 text-accentBlue">本番</th>
                         </tr>
@@ -389,17 +391,17 @@
                 </table>
             </div>
 
-            <!-- カテゴリ2: リレー系統 -->
+            <!-- カテゴリ2: relay（リレー系統） -->
             <div class="table-container no-scrollbar">
                 <h2 class="maint-group-title text-sm font-black text-accentOrange border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
-                    <i class="fas fa-route"></i> 受信点受け
+                    <i class="fas fa-route"></i> リレー系統 (relay)
                 </h2>
                 <table>
                     <thead>
                         <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
                             <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5 text-accentOrange">走行</th>
                             <th class="pb-1.5">技術</th>
-                            <th class="pb-1.5">走行</th>
                             <th class="pb-1.5">リハ</th>
                             <th class="pb-1.5 text-accentOrange">本番</th>
                         </tr>
@@ -408,22 +410,22 @@
                 </table>
             </div>
 
-            <!-- カテゴリ3: 予備・特設系統 -->
+            <!-- カテゴリ3: opt（光回線系統） -->
             <div class="table-container no-scrollbar">
-                <h2 class="maint-group-title text-sm font-black text-slate-300 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
-                    <i class="fas fa-shield-alt"></i> 光回線
+                <h2 class="maint-group-title text-sm font-black text-emerald-400 border-b border-borderStroke/60 pb-2 mb-3 flex items-center gap-2">
+                    <i class="fas fa-bolt"></i> 光回線系統 (opt)
                 </h2>
                 <table>
                     <thead>
                         <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
                             <th class="text-left pb-1.5 pl-2">対象回線</th>
+                            <th class="pb-1.5 text-accentOrange">走行</th>
                             <th class="pb-1.5">技術</th>
-                            <th class="pb-1.5">走行</th>
                             <th class="pb-1.5">リハ</th>
                             <th class="pb-1.5 text-slate-300">本番</th>
                         </tr>
                     </thead>
-                    <tbody id="group-sub" class="divide-y divide-borderStroke/30"></tbody>
+                    <tbody id="group-opt" class="divide-y divide-borderStroke/30"></tbody>
                 </table>
             </div>
         </div>
@@ -435,7 +437,7 @@
     <div id="view-input" class="view-content px-4 space-y-6">
         <div class="w-full max-w-sm mx-auto bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
             <h2 class="text-sm font-black text-accentBlue border-b border-borderStroke/60 pb-3 text-center flex items-center justify-center gap-2">
-                <i class="fas fa-edit"></i> 電界データ＆Ch入力
+                <i class="fas fa-edit"></i> 電界データ＆スペック入力
             </h2>
             <div class="space-y-3 text-xs">
                 <div>
@@ -445,10 +447,10 @@
                 <div>
                     <label class="block text-xs text-slate-400 mb-1.5 font-bold uppercase tracking-wider">② 現在のフェーズ (日程)</label>
                     <select id="phase-select" onchange="saveInputState(); fetchCurrentRecord();" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-bold">
+                        <option value="run" selected>走行テスト</option>
                         <option value="tech">技術テスト</option>
-                        <option value="run">走行テスト</option>
                         <option value="rehe">リハーサル</option>
-                        <option value="prod" selected>本番</option>
+                        <option value="prod">本番</option>
                     </select>
                 </div>
                 <div>
@@ -512,18 +514,24 @@
                     </div>
                 </div>
 
-                <div class="text-center pt-2">
-                    <label class="text-xs text-slate-400 font-bold uppercase tracking-wider">⑤ 電界強度数値入力</label>
-                    <div class="flex items-center justify-center gap-3 my-3">
-                        <button onclick="changeValue(-5)" class="w-11 h-11 bg-bgDark border border-borderStroke text-white text-sm font-black rounded-xl active:bg-slate-800 transition">-5</button>
-                        <button onclick="changeValue(-1)" class="w-11 h-11 bg-bgDark border border-borderStroke text-white text-sm font-black rounded-xl active:bg-slate-800 transition">-1</button>
-                        <div class="w-24 text-center font-mono font-black text-3xl tracking-tight text-white flex items-baseline justify-center">
-                            <span id="db-value">60</span><span class="text-xs text-slate-500 font-sans ml-0.5 font-bold">dB</span>
+                <!-- 🎛️ ⑤ 電界強度数値入力（手打ち・直接編集ハイブリッド完全対応） -->
+                <div class="text-center pt-2 border-t border-borderStroke/40">
+                    <label class="text-xs text-slate-400 font-black uppercase tracking-wider">⑤ 電界強度数値入力 (手打ち対応)</label>
+                    <div class="flex items-center justify-center gap-2 my-3">
+                        <button onclick="changeValue(-5)" class="w-10 h-10 bg-bgDark border border-borderStroke text-white text-xs font-black rounded-xl active:bg-slate-800 transition">-5</button>
+                        <button onclick="changeValue(-1)" class="w-10 h-10 bg-bgDark border border-borderStroke text-white text-xs font-black rounded-xl active:bg-slate-800 transition">-1</button>
+                        
+                        <!-- 🌟 直接打ち込めるハイブリッド数値フォーム -->
+                        <div class="bg-bgDark border border-borderStroke rounded-xl px-2 py-1 flex items-center justify-center w-28 shadow-inner">
+                            <input type="number" id="db-direct-input" min="0" max="99" oninput="syncDirectDBInput()" class="w-14 bg-transparent text-center font-mono font-black text-2xl text-white outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                            <span class="text-xs text-slate-500 font-bold ml-0.5 select-none">dB</span>
                         </div>
-                        <button onclick="changeValue(1)" class="w-11 h-11 bg-bgDark border border-borderStroke text-white text-sm font-black rounded-xl active:bg-slate-800 transition">+1</button>
-                        <button onclick="changeValue(5)" class="w-11 h-11 bg-bgDark border border-borderStroke text-white text-sm font-black rounded-xl active:bg-slate-800 transition">+5</button>
+
+                        <button onclick="changeValue(1)" class="w-10 h-10 bg-bgDark border border-borderStroke text-white text-xs font-black rounded-xl active:bg-slate-800 transition">+1</button>
+                        <button onclick="changeValue(5)" class="w-10 h-10 bg-bgDark border border-borderStroke text-white text-xs font-black rounded-xl active:bg-slate-800 transition">+5</button>
                     </div>
                 </div>
+
                 <div class="space-y-2 pt-1 border-t border-borderStroke/40">
                     <div>
                         <label class="block text-xs text-emerald-400 font-bold uppercase mb-1">現場メモ</label>
@@ -548,16 +556,16 @@
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- 📊 CSV一括インポートブロック（乗算セパレーター完全修正版） -->
+            <!-- 📊 CSV一括インポートブロック (optカテゴリ拡張対応版) -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-csv text-amber-400"></i> CSVから受信点＆スペックを一括登録
                 </h2>
                 <div class="space-y-3 text-xs">
                     <p class="text-slate-400 font-bold leading-relaxed">
-                        フォーマット (UTF-8): エクセル作成時の1行目（見出し・ヘッダー行）はシステムが自動でスキップします。<br>
+                        フォーマット (UTF-8): エクセル作成時の1行目（見出し・ヘッダー行）は自動でスキップします。<br>
                         <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
-                        ※カテゴリ: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">sub</code>(光)
+                        ※カテゴリ識別値: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">opt</code>(光回線)
                     </p>
                     <div class="flex flex-col gap-2">
                         <input type="file" id="csv-file-input" accept=".csv" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-slate-800 file:text-accentBlue hover:file:bg-slate-700 cursor-pointer">
@@ -589,9 +597,9 @@
                     <div>
                         <label class="block text-xs text-slate-400 mb-1 font-bold">ブロックカテゴリ</label>
                         <select id="link-category" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-sm font-bold">
-                            <option value="main">センター受け (main)</option>
+                            <option value="main">本線系統 (main)</option>
                             <option value="relay">受信点受け (relay)</option>
-                            <option value="sub">光回線 (sub)</option>
+                            <option value="opt">光回線系統 (opt)</option>
                         </select>
                     </div>
                     <button onclick="submitNewLink()" class="w-full bg-accentGreen text-bgDark font-black text-sm py-3 rounded-xl shadow-lg">この大会に受信点を追加</button>
@@ -603,7 +611,7 @@
                 <div class="space-y-3">
                     <div><span class="text-xs text-accentBlue font-bold">【本線】</span><div id="maint-box-main" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
                     <div><span class="text-xs text-accentOrange font-bold">【リレー】</span><div id="maint-box-relay" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
-                    <div><span class="text-xs text-slate-400 font-bold">【予備特設】</span><div id="maint-box-sub" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
+                    <div><span class="text-xs text-emerald-400 font-bold">【光回線】</span><div id="maint-box-opt" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
                 </div>
                 <button onclick="saveGroupedOrder()" class="w-full bg-accentBlue text-bgDark font-black text-xs py-3 rounded-xl shadow-md mt-2">並び順を一括確定して同期</button>
                 <div id="order-status-msg" class="text-xs text-center text-accentGreen font-bold empty:hidden"></div>
@@ -657,9 +665,16 @@
     let activeProgramTitle = "";
     let currentVal = 60;
     let currentUserRole = "staff";
-    let sortableInstances = { main: null, relay: null, sub: null };
+    let sortableInstances = { main: null, relay: null, opt: null };
     
     let realtimeChannelInstance = null;
+
+    // 🌟 動的色分けしきい値の初期値
+    let thLow = 35;
+    let thHigh = 50;
+
+    // クラウド上にある全生データを一時退避するキャッシュストア（しきい値スライダー変更時に全再描画するため）
+    let cachedRecords = [];
 
     window.addEventListener('load', async () => {
         handleResponsiveLayout();
@@ -673,6 +688,33 @@
             document.getElementById('login-view').classList.replace('hidden', 'flex');
         }
     });
+
+    // 🌟 任意の色分けしきい値スライダー連動関数
+    function updateColorThresholds() {
+        const sliderLow = document.getElementById('slider-th-low');
+        const sliderHigh = document.getElementById('slider-th-high');
+        
+        thLow = parseInt(sliderLow.value, 10);
+        thHigh = parseInt(sliderHigh.value, 10);
+
+        // スライダー同士が逆転しないよう制御
+        if(thLow >= thHigh) {
+            sliderHigh.value = thLow + 1;
+            thHigh = thLow + 1;
+        }
+
+        // ラベル更新
+        document.getElementById('val-th-low').innerText = thLow + " dB";
+        document.getElementById('val-th-high').innerText = thHigh + " dB";
+        document.getElementById('label-th-low').innerText = thLow;
+        document.getElementById('label-th-mid').innerText = `${thLow}〜${thHigh}`;
+        document.getElementById('label-th-high').innerText = thHigh;
+
+        // 🌟 キャッシュデータを用いて、非同期通信を挟まず画面全体の配色レイアウトを瞬時に再計算
+        cachedRecords.forEach(rec => {
+            updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model);
+        });
+    }
 
     function handleResponsiveLayout() {
         const isDesktop = window.innerWidth >= 1024;
@@ -732,17 +774,13 @@
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-500/30";
             }
             if(document.getElementById('btn-welcome-create')) document.getElementById('btn-welcome-create').classList.remove('hidden');
-            if(maintNavBtn) {
-                maintNavBtn.classList.remove('hidden');
-            }
+            if(maintNavBtn) maintNavBtn.classList.remove('hidden');
         } else {
             if(badge) {
                 badge.innerText = "FIELD STAFF";
                 badge.className = "text-xs font-mono font-black px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-borderStroke";
             }
-            if(maintNavBtn) {
-                maintNavBtn.classList.add('hidden');
-            }
+            if(maintNavBtn) maintNavBtn.classList.add('hidden');
         }
         document.getElementById('login-view').classList.replace('flex', 'hidden');
         fetchProgramsList();
@@ -795,14 +833,16 @@
         if (!sb || !activeProgramId) return;
         document.getElementById('group-main').innerHTML = '';
         document.getElementById('group-relay').innerHTML = '';
-        document.getElementById('group-sub').innerHTML = '';
+        document.getElementById('group-opt').innerHTML = ''; // subからoptへ
 
         const { data: links } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
         if (links) {
             links.forEach(link => {
-                let targetId = 'group-sub';
+                let targetId = 'group-opt'; // 変更: フォールバックをoptへ
                 if (link.category === 'main') targetId = 'group-main';
                 if (link.category === 'relay') targetId = 'group-relay';
+                if (link.category === 'opt') targetId = 'group-opt'; // 明示的指定
+
                 const tbody = document.getElementById(targetId);
                 if (tbody) {
                     const tr = document.createElement('tr');
@@ -810,13 +850,13 @@
                     tr.className = "hover:bg-slate-800/20 transition-colors";
                     tr.innerHTML = `
                         <td class="text-left font-black py-3 text-slate-200 link-label text-sm pr-1 pl-2.5 leading-tight">${formatLinkLabel(link.name)}</td>
-                        <td class="phase-tech p-1 align-top"></td>
                         <td class="phase-run p-1 align-top"></td>
+                        <td class="phase-tech p-1 align-top"></td>
                         <td class="phase-rehe p-1 align-top"></td>
                         <td class="phase-prod p-1 align-top"></td>
                     `;
                     tbody.appendChild(tr);
-                    ['tech','run','rehe','prod'].forEach(p => updateCellSkeleton(link.id, p));
+                    ['run','tech','rehe','prod'].forEach(p => updateCellSkeleton(link.id, p));
                 }
             });
 
@@ -824,11 +864,8 @@
         }
 
         if (!realtimeChannelInstance) {
-            console.log("⚡ クリーンなWebSocket通信セッションを新規確立します");
             realtimeChannelInstance = sb.channel('live-records-pipeline');
-            
             realtimeChannelInstance.on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, payload => {
-                console.log("⚡ WebSocketパケットを受信しました:", payload);
                 const updated = payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old;
                 if (!updated) return;
 
@@ -839,25 +876,22 @@
                     if (payload.eventType === 'DELETE') { 
                         updateCellSkeleton(updated.link_id, updated.phase); 
                     } else { 
+                        // キャッシュ更新
+                        const idx = cachedRecords.findIndex(r => r.id === updated.id);
+                        if(idx !== -1) cachedRecords[idx] = updated; else cachedRecords.push(updated);
+
                         updateCell(updated.link_id, updated.phase, parseInt(updated.value, 10), updated.field_memo, updated.center_memo, updated.fpu_channel, updated.mod_type, updated.preset_type, updated.ts_rate, updated.tx_model, updated.rx_model, true); 
                     }
                 }
             })
             .subscribe((status) => {
-                console.log("⚡ WebSocket通信ステータス通知:", status);
                 const ind = document.getElementById('rt-indicator');
                 if(ind) {
-                    if(status === 'SUBSCRIBED') {
-                        ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse";
-                        ind.title = "即時自動更新システム稼働中";
-                    } else {
-                        ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]";
-                        ind.title = "接続待機中: " + status;
-                    }
+                    if(status === 'SUBSCRIBED') ind.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] animate-pulse";
+                    else ind.className = "w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]";
                 }
             });
         } else {
-            console.log("⚡ 既存の健全なWebSocket回線が維持されているため、切断せず再利用します");
             await refreshDashboardData();
         }
     }
@@ -866,6 +900,7 @@
         if (!sb || !activeProgramId) return;
         const { data: records } = await sb.from('records').select('*').eq('program_id', activeProgramId);
         if (records) { 
+            cachedRecords = records; // キャッシュに格納
             records.forEach(rec => updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model)); 
         }
     }
@@ -888,9 +923,10 @@
             return;
         }
 
+        // 🌟 動的なカスタマイズしきい値（thLow, thHigh）を判定ロジックにインジェクション
         let statusColor = 'text-accentGreen'; let bgStyle = 'bg-emerald-950/20 border-emerald-500/20';
-        if (value < 35) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
-        else if (value < 50) { statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; }
+        if (value < thLow) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
+        else if (value < thHigh) { statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; }
 
         let chHtml = fpuChannel ? `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-black px-1.5 py-0.5 rounded font-mono">${fpuChannel}</span>` : `<span class="text-slate-600 text-xs">-- Ch</span>`;
         let memoHtml = "";
@@ -990,12 +1026,27 @@
             document.getElementById('input-tx-model').value = "";
             document.getElementById('input-rx-model').value = "";
         }
-        document.getElementById('db-value').innerText = currentVal;
+        // 🌟 インプット欄への同期
+        document.getElementById('db-direct-input').value = currentVal;
     }
 
+    // 🌟 ボタンによる数値変動ロジック
     function changeValue(amount) {
         currentVal = Math.max(0, Math.min(99, currentVal + amount));
-        document.getElementById('db-value').innerText = currentVal;
+        document.getElementById('db-direct-input').value = currentVal;
+        saveInputState();
+    }
+
+    // 🌟 手打ち（直接入力）時のリアルタイム同期バリデーション
+    function syncDirectDBInput() {
+        const inputEl = document.getElementById('db-direct-input');
+        let val = parseInt(inputEl.value, 10);
+        if (isNaN(val)) val = 0;
+        if (val < 0) val = 0;
+        if (val > 99) val = 99;
+        
+        currentVal = val;
+        saveInputState();
     }
 
     async function submitToSupabase() {
@@ -1003,6 +1054,9 @@
         const currentPhase = document.getElementById('phase-select').value;
         const batchAll = document.getElementById('batch-all-phases').checked;
         if (!linkId || !currentPhase) return;
+
+        // 最新の手打ち・またはボタン値を確定
+        syncDirectDBInput();
 
         const baseRecord = {
             program_id: activeProgramId,
@@ -1018,7 +1072,7 @@
         };
 
         let promises = [];
-        const allPhases = batchAll ? ['tech', 'run', 'rehe', 'prod'] : [currentPhase];
+        const allPhases = batchAll ? ['run', 'tech', 'rehe', 'prod'] : [currentPhase];
 
         for (const phase of allPhases) {
             const { data: match } = await sb.from('records')
@@ -1031,9 +1085,7 @@
             let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (match ? match.value : 60);
             
             let payload = { ...baseRecord, phase: phase, value: valToSubmit };
-            if (match && match.id) {
-                payload.id = match.id;
-            }
+            if (match && match.id) payload.id = match.id;
 
             promises.push(sb.from('records').upsert(payload, { onConflict: 'id' }));
         }
@@ -1046,8 +1098,7 @@
             msg.innerText = batchAll ? "✔ 全日程への一括送信成功" : "✔ 送信成功";
             setTimeout(() => { msg.innerText = ""; }, 2000);
         } else {
-            const msg = document.getElementById('status-msg');
-            msg.innerText = "❌ エラーが発生しました";
+            document.getElementById('status-msg').innerText = "❌ エラーが発生しました";
         }
     }
 
@@ -1056,12 +1107,7 @@
         const box = document.getElementById('user-role-list-box');
         box.innerHTML = '<div class="text-center text-xs text-slate-500 py-4">クラウド同期中...</div>';
 
-        const { data, error = null } = await sb.from('user_roles').select('*').neq('email', 'admin@fpu.system').order('email', { ascending: true });
-        if (error) {
-            box.innerHTML = '<div class="text-center text-xs text-rose-400 py-4">読み込みエラー</div>';
-            return;
-        }
-
+        const { data } = await sb.from('user_roles').select('*').neq('email', 'admin@fpu.system').order('email', { ascending: true });
         if(!data || data.length === 0) {
             box.innerHTML = '<div class="text-center text-xs text-slate-500 py-6">管理可能なアカウントが存在しません。</div>';
             return;
@@ -1073,31 +1119,26 @@
                 <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex items-center justify-between gap-2">
                     <div class="min-w-0 flex-1">
                         <div class="text-xs font-black text-slate-200 truncate">${u.email}</div>
-                        <div class="text-[10px] font-mono text-slate-500 truncate">ID: ${u.id}</div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isAdmin ? 'bg-amber-950 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400'}">
-                            ${isAdmin ? '管理者(管理者画面可)' : '現場スタッフ'}
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isAdmin ? 'bg-amber-950 text-amber-400' : 'bg-slate-800 text-slate-400'}">
+                            ${isAdmin ? '管理者' : '現場スタッフ'}
                         </span>
                         <button onclick="toggleUserRole('${u.id}', '${u.role}')" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-bold text-accentBlue transition-all">
                             権限切替
                         </button>
                     </div>
-                </div>
-            `;
+                </div>`;
         }).join('');
     }
 
     async function toggleUserRole(userId, currentRole) {
         if (!sb) return;
         const nextRole = (currentRole === 'admin') ? 'staff' : 'admin';
-
         const { error } = await sb.from('user_roles').update({ role: nextRole }).eq('id', userId);
         if (!error) {
             const mySession = await sb.auth.getSession();
-            if (userId === mySession.data.session?.user.id) {
-                await syncUserRoleAndInit(userId, mySession.data.session?.user.email);
-            }
+            if (userId === mySession.data.session?.user.id) await syncUserRoleAndInit(userId, mySession.data.session?.user.email);
             await loadUserRoleList();
         }
     }
@@ -1129,12 +1170,9 @@
             rx_model: currentRec ? currentRec.rx_model : ""
         };
 
-        if (currentRec && currentRec.id) {
-            payload.id = currentRec.id;
-        }
+        if (currentRec && currentRec.id) payload.id = currentRec.id;
 
         await sb.from('records').upsert(payload, { onConflict: 'id' });
-
         document.getElementById('dash-center-memo').value = "";
         document.getElementById('dash-channel-input').value = "";
         await refreshDashboardData();
@@ -1144,16 +1182,17 @@
         if (!sb || !activeProgramId || currentUserRole !== 'admin') return;
         const boxMain = document.getElementById('maint-box-main');
         const boxRelay = document.getElementById('maint-box-relay');
-        const boxSub = document.getElementById('maint-box-sub');
+        const boxOpt = document.getElementById('maint-box-opt'); // subからoptへ
 
         const { data } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
-        boxMain.innerHTML = ""; boxRelay.innerHTML = ""; boxSub.innerHTML = "";
+        boxMain.innerHTML = ""; boxRelay.innerHTML = ""; boxOpt.innerHTML = "";
 
         if (data) {
             data.forEach(l => {
-                let targetBox = boxSub;
+                let targetBox = boxOpt;
                 if (l.category === 'main') targetBox = boxMain;
                 if (l.category === 'relay') targetBox = boxRelay;
+                if (l.category === 'opt') targetBox = boxOpt; // opt系統
 
                 const html = `
                     <div data-id="${l.id}" class="bg-bgDark border border-borderStroke px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-grab">
@@ -1168,7 +1207,7 @@
         const sortOptions = { animation: 150, ghostClass: 'sortable-ghost', forceFallback: true };
         sortableInstances.main = new Sortable(boxMain, sortOptions);
         sortableInstances.relay = new Sortable(boxRelay, sortOptions);
-        sortableInstances.sub = new Sortable(boxSub, sortOptions);
+        sortableInstances.opt = new Sortable(boxOpt, sortOptions);
     }
 
     function destroyAllSortable() {
@@ -1178,8 +1217,8 @@
     async function saveGroupedOrder() {
         const mainIds = sortableInstances.main ? sortableInstances.main.toArray() : [];
         const relayIds = sortableInstances.relay ? sortableInstances.relay.toArray() : [];
-        const subIds = sortableInstances.sub ? sortableInstances.sub.toArray() : [];
-        const total = [...mainIds, ...relayIds, ...subIds];
+        const optIds = sortableInstances.opt ? sortableInstances.opt.toArray() : [];
+        const total = [...mainIds, ...relayIds, ...optIds];
 
         const promises = total.map((id, idx) => sb.from('links').update({ sort_order: idx }).eq('id', id));
         await Promise.all(promises);
@@ -1195,15 +1234,13 @@
         if (!name) return;
 
         const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
-        
-        // 手動追加時も 絶対に丸まらない整数連番で生成
         const newLinkId = 100000 + count + Math.floor(Math.random() * 1000);
         await sb.from('links').insert([{ id: newLinkId, program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
         document.getElementById('link-name').value = ''; 
         loadRegisteredLinks();
     }
 
-    // ⚡ CSV一括インポート（乗算数式によるキー衝突回避＆1行目強制スキップ完全解決版）
+    // ⚡ CSV一括インポート（opt対応・上書き検知機能搭載版）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1231,30 +1268,34 @@
                 return;
             }
 
-            // 現在の既存の受信点数を取得
+            statusMsg.innerText = "🔄 クラウド上の既存データを照合中...";
+
+            const { data: existingLinks } = await sb.from('links').select('*').eq('program_id', activeProgramId);
+            const linkMap = {};
+            if (existingLinks) {
+                existingLinks.forEach(l => { linkMap[l.name.trim()] = l; });
+            }
+
             const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
             let startOrder = count || 0;
 
             const linksBatch = [];
             const recordsBatch = [];
-            const validCategories = ['main', 'relay', 'sub'];
-            const phases = ['tech', 'run', 'rehe', 'prod'];
+            const validCategories = ['main', 'relay', 'opt']; // subからoptへ
+            const phases = ['run', 'tech', 'rehe', 'prod'];
 
-            // 🌟 過去データや他番組データと衝突せず、JavaScriptの安全整数内で収まる10万番台ベース
             const idSeedBase = 100000 + startOrder; 
 
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
-                // 🌟 1行目（見出し・ヘッダー行）は強制的にスキップ
-                if (i === 0) {
-                    console.log("⚡ 1行目をヘッダー(見出し)行として強制スキップしました");
-                    continue;
-                }
+                if (i === 0) continue; // 見出し行強制スキップ
 
                 const name = columns[0]?.trim() || "";
-                const category = columns[1]?.trim().toLowerCase() || "sub";
+                let category = columns[1]?.trim().toLowerCase() || "opt";
+                if(category === 'sub') category = 'opt'; // 旧形式との互換フォールバック
+
                 const fpuChannel = columns[2]?.trim() || "";
                 const modType = columns[3]?.trim() || "";
                 const presetType = columns[4]?.trim() || "";
@@ -1262,27 +1303,33 @@
                 const txModel = columns[6]?.trim() || "";
                 const rxModel = columns[7]?.trim() || "";
 
-                const finalCategory = validCategories.includes(category) ? category : 'sub';
+                const finalCategory = validCategories.includes(category) ? category : 'opt';
                 
-                // 🌟 受信点の一意な数値ID
-                const numLinkId = idSeedBase + i;
+                let numLinkId;
+                let isNewLink = false;
+
+                if (linkMap[name]) {
+                    numLinkId = linkMap[name].id;
+                } else {
+                    numLinkId = idSeedBase + i;
+                    isNewLink = true;
+                }
 
                 linksBatch.push({
                     id: numLinkId,
                     program_id: activeProgramId,
                     name: name,
                     category: finalCategory,
-                    sort_order: startOrder++
+                    sort_order: isNewLink ? startOrder++ : linkMap[name].sort_order
                 });
 
                 phases.forEach((phase, phaseIdx) => {
-                    // 🌟 【最重要修正】桁の重なりによるキー衝突を防ぐため、受信点インデックスを10倍にしてからフェーズ番号を足す数式に変更
                     const numRecordId = (numLinkId * 10) + (phaseIdx + 1);
 
                     recordsBatch.push({
-                        id: numRecordId,        // 絶対にユニークな乗算連番ID
+                        id: numRecordId,
                         program_id: activeProgramId,
-                        link_id: numLinkId,     // 外部キー
+                        link_id: numLinkId,
                         phase: phase,
                         value: 60,
                         fpu_channel: fpuChannel,
@@ -1297,22 +1344,16 @@
                 });
             }
 
-            if (linksBatch.length === 0) {
-                statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = "⚠️ 有効な回線データが構築できませんでした。";
-                return;
-            }
-
-            statusMsg.innerText = `🔄 ${linksBatch.length}件の受信点情報をクラウドへ送信中...`;
+            statusMsg.innerText = `🔄 スペックデータの上書き同期を実行中...`;
 
             const [linksRes, recordsRes] = await Promise.all([
-                sb.from('links').insert(linksBatch),
-                sb.from('records').insert(recordsBatch)
+                sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
+                sb.from('records').upsert(recordsBatch, { onConflict: 'id' })
             ]);
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート完了！ ${linksBatch.length}件の受信点マスターとスペックセルを完全に同期しました。`;
+                statusMsg.innerText = `✔️ インポート完了！ 光回線系統(opt)を含む最新の機材スペックを完全同期しました。`;
                 fileInput.value = "";
                 
                 loadRegisteredLinks();
@@ -1321,7 +1362,7 @@
                 const err = linksRes.error || recordsRes.error;
                 console.error("CSV Import Error:", err);
                 statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = `❌ 登録中にインフラエラーが発生しました: ${err ? err.message : 'Unknown'}`;
+                statusMsg.innerText = "❌ クラウドの書き換えに失敗しました。";
             }
         };
 
