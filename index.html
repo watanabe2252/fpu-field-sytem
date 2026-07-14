@@ -351,12 +351,13 @@
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                        <!-- 🌟  th見出し行のフォントサイズを text-xs ➔ text-base (16px) へ拡大し、強固なウェイトとカラーを付与 -->
+                        <tr class="text-base font-black tracking-wider border-b border-borderStroke/40">
+                            <th class="text-left pb-1.5 pl-2 text-slate-400 font-bold text-xs uppercase">対象回線</th>
                             <th class="pb-1.5 text-accentOrange">走行</th>
-                            <th class="pb-1.5">技術</th>
-                            <th class="pb-1.5">リハ</th>
-                            <th class="pb-1.5 text-accentBlue">本番</th>
+                            <th class="pb-1.5 text-sky-400">技術</th>
+                            <th class="pb-1.5 text-emerald-400">総合リハ</th>
+                            <th class="pb-1.5 text-rose-500">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-main" class="divide-y divide-borderStroke/30"></tbody>
@@ -370,12 +371,12 @@
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                        <tr class="text-base font-black tracking-wider border-b border-borderStroke/40">
+                            <th class="text-left pb-1.5 pl-2 text-slate-400 font-bold text-xs uppercase">対象回線</th>
                             <th class="pb-1.5 text-accentOrange">走行</th>
-                            <th class="pb-1.5">技術</th>
-                            <th class="pb-1.5">リハ</th>
-                            <th class="pb-1.5 text-accentOrange">本番</th>
+                            <th class="pb-1.5 text-sky-400">技術</th>
+                            <th class="pb-1.5 text-emerald-400">総合リハ</th>
+                            <th class="pb-1.5 text-rose-500">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-relay" class="divide-y divide-borderStroke/30"></tbody>
@@ -389,12 +390,12 @@
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-xs text-slate-400 font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left pb-1.5 pl-2">対象回線</th>
+                        <tr class="text-base font-black tracking-wider border-b border-borderStroke/40">
+                            <th class="text-left pb-1.5 pl-2 text-slate-400 font-bold text-xs uppercase">対象回線</th>
                             <th class="pb-1.5 text-accentOrange">走行</th>
-                            <th class="pb-1.5">技術</th>
-                            <th class="pb-1.5">リハ</th>
-                            <th class="pb-1.5 text-slate-300">本番</th>
+                            <th class="pb-1.5 text-sky-400">技術</th>
+                            <th class="pb-1.5 text-emerald-400">総合リハ</th>
+                            <th class="pb-1.5 text-rose-500">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-opt" class="divide-y divide-borderStroke/30"></tbody>
@@ -421,7 +422,7 @@
                     <select id="phase-select" onchange="saveInputState(); fetchCurrentRecord();" class="w-full bg-bgDark border border-borderStroke rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accentBlue font-bold">
                         <option value="run" selected>走行テスト</option>
                         <option value="tech">技術テスト</option>
-                        <option value="rehe">リハーサル</option>
+                        <option value="rehe">総合リハーサル</option>
                         <option value="prod">本番</option>
                     </select>
                 </div>
@@ -490,7 +491,6 @@
                         <button onclick="changeValue(-5)" class="w-10 h-10 bg-bgDark border border-borderStroke text-white text-xs font-black rounded-xl active:bg-slate-800 transition">-5</button>
                         <button onclick="changeValue(-1)" class="w-10 h-10 bg-bgDark border border-borderStroke text-white text-xs font-black rounded-xl active:bg-slate-800 transition">-1</button>
                         
-                        <!-- 🌟 直接打ち込めるハイブリッド数値フォーム（フロント側はマイナス記号の有無に関わらず安全に処理） -->
                         <div class="bg-bgDark border border-borderStroke rounded-xl px-2 py-1 flex items-center justify-center w-32 shadow-inner">
                             <span class="text-slate-500 font-mono font-bold text-lg select-none mr-0.5">-</span>
                             <input type="number" id="db-direct-input" min="0" max="99" oninput="syncDirectDBInput()" class="w-12 bg-transparent text-center font-mono font-black text-2xl text-white outline-none">
@@ -526,13 +526,13 @@
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- 🎛️ しきい値管理センターブロック (FPU・OPT双方のdBm完全最適化版) -->
+            <!-- 🎛️ しきい値管理センターブロック -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-sliders-h text-amber-400"></i> 動的アラートしきい値集中管理
                 </h2>
                 
-                <!-- ① FPU無線用（main/relay） -->
+                <!-- ① FPU無線用 -->
                 <div class="space-y-3 bg-bgDark/40 p-3 rounded-xl border border-borderStroke/60">
                     <div class="flex items-center justify-between text-xs font-bold border-b border-borderStroke/60 pb-1.5">
                         <span class="text-accentOrange"><i class="fas fa-wifi mr-1"></i> FPU無線系統 (main / relay)</span>
@@ -550,7 +550,7 @@
                     </div>
                 </div>
 
-                <!-- ② 光回線用（opt）🌟指示内容通りに基準値変更＆マイナス処理完全デバッグ完了 -->
+                <!-- ② 光回線用（opt） -->
                 <div class="space-y-3 bg-bgDark/40 p-3 rounded-xl border border-borderStroke/60">
                     <div class="flex items-center justify-between text-xs font-bold border-b border-borderStroke/60 pb-1.5">
                         <span class="text-emerald-400"><i class="fas fa-bolt mr-1"></i> 光回線系統 専用 (opt)</span>
@@ -566,7 +566,7 @@
                             <input type="range" id="slider-opt-high" min="2" max="18" value="15" oninput="updateThresholdLogic()" class="w-full h-1 bg-slate-900 rounded appearance-none accent-emerald-400">
                         </div>
                     </div>
-                    <p class="text-[10px] text-slate-500 leading-tight">※緑➔-3〜-15dBm / 黄➔-16〜-20dBm / 赤➔-21dBm以下で動的変色します。</p>
+                    <p class="text-[10px] text-slate-500 leading-tight">※緑➔-3～-15dBm / 黄➔-16～-20dBm / 赤➔-21dBm以下で動的変色します。</p>
                 </div>
             </div>
 
@@ -683,9 +683,8 @@
     
     let realtimeChannelInstance = null;
 
-    // 🌟 無線用 (main/relay) & 光用 (opt) を完全に独立させた数値セパレーター変数
     let wlLow = 81, wlHigh = 60;   
-    let optLow = 21, optHigh = 15; // 🌟 独立した光ファイバー受光しきい値（指定値: -21dBm / -15dBm）
+    let optLow = 21, optHigh = 15; 
 
     let cachedRecords = [];
 
@@ -702,31 +701,25 @@
         }
     });
 
-    // 🌟 スライダー連動処理ロジックの完全バグ解消版
     function updateThresholdLogic() {
         wlLow = parseInt(document.getElementById('slider-wl-low').value, 10);
         wlHigh = parseInt(document.getElementById('slider-wl-high').value, 10);
         optLow = parseInt(document.getElementById('slider-opt-low').value, 10);
         optHigh = parseInt(document.getElementById('slider-opt-high').value, 10);
 
-        // 無線側の交差防止
         if(wlLow <= wlHigh) { wlHigh = wlLow - 1; document.getElementById('slider-wl-high').value = wlHigh; }
-        // 光側の交差防止 (マイナス値の大小反転に対応)
         if(optLow <= optHigh) { optHigh = optLow - 1; document.getElementById('slider-opt-high').value = optHigh; }
 
-        // 無線側表示
         document.getElementById('val-wl-low').innerText = "-" + wlLow + " dBm"; 
         document.getElementById('val-wl-high').innerText = "-" + wlHigh + " dBm";
         document.getElementById('lbl-wl-low').innerText = "-" + wlLow; 
         document.getElementById('lbl-wl-high').innerText = "-" + wlHigh;
 
-        // 🌟 光回線側表示を完全デバッグ (プラス値管理 ➔ マイナス表示へ)
         document.getElementById('val-opt-low').innerText = "-" + optLow + " dBm"; 
         document.getElementById('val-opt-high').innerText = "-" + optHigh + " dBm";
         document.getElementById('lbl-opt-low').innerText = "-" + optLow; 
         document.getElementById('lbl-opt-high').innerText = "-" + optHigh;
 
-        // ダッシュボード全セルの再評価
         cachedRecords.forEach(rec => {
             updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model);
         });
@@ -942,7 +935,6 @@
         let statusColor = 'text-accentGreen'; let bgStyle = 'bg-emerald-950/20 border-emerald-500/20';
         let unitLabel = "dBm";
 
-        // 🌟 無線系統（main/relay）および光系統（opt）の全インフラカラーマッピング処理
         if (cat === 'main' || cat === 'relay') {
             if (value >= wlLow) { 
                 statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; 
@@ -950,7 +942,7 @@
                 statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; 
             }
         } else {
-            // 🌟 OPT（光回線系統）のカラーしきい値ロジックバグを完全解消
+            // 🌟 OPT（光回線系統）も指示通りの受光レベルしきい値(-21dBm / -15dBm)で条件分岐
             if (value >= optLow) { 
                 statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; 
             } else if (value > optHigh) { 
@@ -958,7 +950,6 @@
             }
         }
 
-        // ダッシュボード画面上の見栄えを統一するため、数値の先頭にマイナス記号を自動付与
         const displayValue = "-" + value;
 
         let chHtml = fpuChannel ? `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-black px-1.5 py-0.5 rounded font-mono">${fpuChannel}</span>` : `<span class="text-slate-600 text-xs">-- Ch</span>`;
@@ -1036,7 +1027,6 @@
         const phase = document.getElementById('phase-select').value;
         if (!linkId || !phase) return;
 
-        // 🌟 選択した回線のカテゴリに応じて「dBm」単位バッジ表示を連動切り替え
         const cat = linkCategoryCache[linkId] || 'opt';
         document.getElementById('db-unit-badge').innerText = "dBm";
 
@@ -1052,8 +1042,7 @@
             document.getElementById('input-tx-model').value = data.tx_model || "";
             document.getElementById('input-rx-model').value = data.rx_model || "";
         } else {
-            // 新規回線のデフォルトアロケーション値（現場で見落としのない初期値を設定）
-            currentVal = (cat === 'opt') ? 10 : 60;
+            currentVal = (cat === 'opt') ? 15 : 60;
             document.getElementById('input-field-memo').value = "";
             document.getElementById('input-center-memo').value = "";
             document.getElementById('channel-custom-input').value = "";
@@ -1072,10 +1061,8 @@
         saveInputState();
     }
 
-    // 🌟 手打ち（直接文字入力）時のマイナス記号誤爆防止と安全な数値パースフィルター
     function syncDirectDBInput() {
         const inputEl = document.getElementById('db-direct-input');
-        // マイナス記号が直打ちされても、絶対値として強制クリーンパース
         let val = Math.abs(parseInt(inputEl.value, 10));
         if (isNaN(val)) val = 0;
         if (val < 0) val = 0;
@@ -1090,7 +1077,6 @@
         const batchAll = document.getElementById('batch-all-phases').checked;
         if (!linkId || !currentPhase) return;
 
-        // 送信直前のデータ最終クレンジング
         syncDirectDBInput();
 
         const baseRecord = {
@@ -1268,7 +1254,7 @@
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート（上書きUpsert仕様）
+    // ⚡ CSV一括インポート
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1359,7 +1345,7 @@
                         program_id: activeProgramId,
                         link_id: numLinkId,
                         phase: phase,
-                        value: (finalCategory === 'opt') ? 10 : 60, // optのデフォルト初期入力値
+                        value: (finalCategory === 'opt') ? 15 : 60, 
                         fpu_channel: fpuChannel,
                         mod_type: modType,
                         preset_type: presetType,
