@@ -524,7 +524,7 @@
     <div id="view-maintenance" class="view-content px-4 space-y-6">
         <div class="w-full max-w-md mx-auto space-y-5">
             
-            <!-- 🎛️ しきい値管理センターブロック (ダッシュボードから移設拡張) -->
+            <!-- 🎛️ しきい値管理センターブロック (FPU無線のdBmマイナス表示拡張仕様) -->
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-accentBlue uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-sliders-h text-amber-400"></i> 動的アラートしきい値集中管理
@@ -534,18 +534,21 @@
                 <div class="space-y-3 bg-bgDark/40 p-3 rounded-xl border border-borderStroke/60">
                     <div class="flex items-center justify-between text-xs font-bold border-b border-borderStroke/60 pb-1.5">
                         <span class="text-accentOrange"><i class="fas fa-wifi mr-1"></i> FPU無線系統 (main / relay)</span>
-                        <span class="text-[10px] font-mono text-slate-400">赤 &lt; <span id="lbl-wl-low" class="text-rose-400">35</span>dB &lt; 黄 &lt; <span id="lbl-wl-high" class="text-accentGreen">50</span>dB</span>
+                        <span class="text-[10px] font-mono text-slate-400">赤 &le; <span id="lbl-wl-low" class="text-rose-400">-81</span>dBm &lt; 黄 &le; <span id="lbl-wl-high" class="text-accentGreen">-60</span>dBm</span>
                     </div>
                     <div class="grid grid-cols-2 gap-4 text-[11px]">
                         <div class="space-y-1">
-                            <div class="flex justify-between text-slate-400"><span>障害ライン</span><span class="font-mono text-rose-400" id="val-wl-low">35 dB</span></div>
-                            <input type="range" id="slider-wl-low" min="10" max="60" value="35" oninput="updateThresholdLogic()" class="w-full h-1 bg-slate-900 roundedappearance-none accent-rose-500">
+                            <div class="flex justify-between text-slate-400"><span>赤判定（障害ライン）</span><span class="font-mono text-rose-400" id="val-wl-low">-81 dBm</span></div>
+                            <!-- 内部計算用: 81 (dBm換算値) -->
+                            <input type="range" id="slider-wl-low" min="65" max="95" value="81" oninput="updateThresholdLogic()" class="w-full h-1 bg-slate-900 rounded appearance-none accent-rose-500">
                         </div>
                         <div class="space-y-1">
-                            <div class="flex justify-between text-slate-400"><span>良好ライン</span><span class="font-mono text-accentGreen" id="val-wl-high">50 dB</span></div>
-                            <input type="range" id="slider-wl-high" min="40" max="90" value="50" oninput="updateThresholdLogic()" class="w-full h-1 bg-slate-900 rounded appearance-none accent-accentGreen">
+                            <div class="flex justify-between text-slate-400"><span>緑判定（良好ライン）</span><span class="font-mono text-accentGreen" id="val-wl-high">-60 dBm</span></div>
+                            <!-- 内部計算用: 60 (dBm換算値) -->
+                            <input type="range" id="slider-wl-high" min="35" max="75" value="60" oninput="updateThresholdLogic()" class="w-full h-1 bg-slate-900 rounded appearance-none accent-accentGreen">
                         </div>
                     </div>
+                    <p class="text-[10px] text-slate-500 leading-tight">※緑➔-35〜-60dBm / 黄➔-61〜-80dBm / 赤➔-81dBm以下で動的変色します。</p>
                 </div>
 
                 <!-- ② 光回線用（opt） -->
@@ -574,7 +577,7 @@
                 </h2>
                 <div class="space-y-3 text-xs">
                     <p class="text-slate-400 font-bold leading-relaxed">
-                        フォーマット (UTF-8): 1行目に見出し（ヘッダー行）を入れても自動スキップされます。<br>
+                        フォーマット (UTF-8): エクセル作成時の1行目（見出し・ヘッダー行）はシステムが自動でスキップします。<br>
                         <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-400 font-mono text-[11px] block mt-1">受信点名,カテゴリ,初期Ch,変調方式,プリセット,TSレート,TX型番,RX型番</code>
                         ※カテゴリ識別値: <code class="text-slate-300 font-mono">main</code>(本線), <code class="text-slate-300 font-mono">relay</code>(受信点), <code class="text-slate-300 font-mono">opt</code>(光回線)
                     </p>
@@ -677,13 +680,13 @@
     let currentVal = 60;
     let currentUserRole = "staff";
     let sortableInstances = { main: null, relay: null, opt: null };
-    let linkCategoryCache = {}; // 各リンクIDのカテゴリをキャッシュ保持する高速照合ストア
+    let linkCategoryCache = {}; 
     
     let realtimeChannelInstance = null;
 
-    // 🌟 独立アロケーションしきい値の変数群
-    let wlLow = 35, wlHigh = 50;   // 無線用 (main/relay)
-    let optLow = 20, optHigh = 40; // 光回線用 (opt)
+    // 🌟 無線用はDBのプラス値(60, 81)を反転させてマイナス表記(-60dBm, -81dBm)として扱います
+    let wlLow = 81, wlHigh = 60;   
+    let optLow = 20, optHigh = 40; 
 
     let cachedRecords = [];
 
@@ -700,27 +703,32 @@
         }
     });
 
-    // 🌟 メンテナンス画面内での独立しきい値リアルタイム反映ロジック
+    // 🌟 メンテナンス画面内での独立しきい値リアルタイム反映ロジック（dBmマイナス表示コンバート版）
     function updateThresholdLogic() {
         wlLow = parseInt(document.getElementById('slider-wl-low').value, 10);
         wlHigh = parseInt(document.getElementById('slider-wl-high').value, 10);
         optLow = parseInt(document.getElementById('slider-opt-low').value, 10);
         optHigh = parseInt(document.getElementById('slider-opt-high').value, 10);
 
-        // 各系統の衝突防止
-        if(wlLow >= wlHigh) { wlHigh = wlLow + 1; document.getElementById('slider-wl-high').value = wlHigh; }
+        // 無線側のスライダー交差防止（マイナス数値なので不等号が逆転）
+        if(wlLow <= wlHigh) { wlHigh = wlLow - 1; document.getElementById('slider-wl-high').value = wlHigh; }
         if(optLow >= optHigh) { optHigh = optLow + 1; document.getElementById('slider-opt-high').value = optHigh; }
 
-        // ラベル反映
-        document.getElementById('val-wl-low').innerText = wlLow + " dB"; document.getElementById('val-wl-high').innerText = wlHigh + " dB";
-        document.getElementById('lbl-wl-low').innerText = wlLow; document.getElementById('lbl-wl-high').innerText = wlHigh;
-        document.getElementById('lbl-wl-mid').innerText = `${wlLow}～${wlHigh}`;
+        // dBmマイナスラベルへ動的反映
+        document.getElementById('val-wl-low').innerText = "-" + wlLow + " dBm"; 
+        document.getElementById('val-wl-high').innerText = "-" + wlHigh + " dBm";
+        document.getElementById('lbl-wl-low').innerText = "-" + wlLow; 
+        document.getElementById('lbl-wl-high').innerText = "-" + wlHigh;
+        document.getElementById('lbl-wl-mid').innerText = `-${wlLow-1}～-${wlHigh+1}`;
 
-        document.getElementById('val-opt-low').innerText = optLow + " dB"; document.getElementById('val-opt-high').innerText = optHigh + " dB";
-        document.getElementById('lbl-opt-low').innerText = optLow; document.getElementById('lbl-opt-high').innerText = optHigh;
+        // 光回線側の通常デシベルラベル反映
+        document.getElementById('val-opt-low').innerText = optLow + " dB"; 
+        document.getElementById('val-opt-high').innerText = optHigh + " dB";
+        document.getElementById('lbl-opt-low').innerText = optLow; 
+        document.getElementById('lbl-opt-high').innerText = optHigh;
         document.getElementById('lbl-opt-mid').innerText = `${optLow}～${optHigh}`;
 
-        // 再描画
+        // キャッシュ再描画
         cachedRecords.forEach(rec => {
             updateCell(rec.link_id, rec.phase, parseInt(rec.value, 10), rec.field_memo, rec.center_memo, rec.fpu_channel, rec.mod_type, rec.preset_type, rec.ts_rate, rec.tx_model, rec.rx_model);
         });
@@ -847,9 +855,9 @@
 
         const { data: links } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
         if (links) {
-            linkCategoryCache = {}; // キャッシュリセット
+            linkCategoryCache = {}; 
             links.forEach(link => {
-                linkCategoryCache[link.id] = link.category; // カテゴリをハッシュストアへ格納
+                linkCategoryCache[link.id] = link.category; 
                 
                 let targetId = 'group-opt'; 
                 if (link.category === 'main') targetId = 'group-main';
@@ -931,19 +939,29 @@
             return;
         }
 
-        // 🌟 【最重要ロジック】リンクIDを元に、無線（main/relay）か光（opt）かを動的に仕分け、個別のしきい値を適用
         const cat = linkCategoryCache[linkId] || 'opt';
-        let currentLow = wlLow;
-        let currentHigh = wlHigh;
         
-        if (cat === 'opt') {
-            currentLow = optLow;
-            currentHigh = optHigh;
-        }
-
         let statusColor = 'text-accentGreen'; let bgStyle = 'bg-emerald-950/20 border-emerald-500/20';
-        if (value < currentLow) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
-        else if (value < currentHigh) { statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; }
+        let unitLabel = "dB";
+
+        // 🌟 【最重要色分け判定ロジック：FPU無線系統（main/relay）のみ、ご指定のdBmマイナス絶対入力判定にスイッチ】
+        if (cat === 'main' || cat === 'relay') {
+            unitLabel = "dBm";
+            // valueはプラス整数(60等)としてDB管理されているため、そのまましきい値(wlLow=81, wlHigh=60)と大小比較
+            // 例：値が 85(つまり-85dBm) ➔ wlLow(81)より数値が大きい ➔ 障害（赤）
+            if (value >= wlLow) { 
+                statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; 
+            } else if (value > wlHigh) { 
+                statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; 
+            }
+            // 表示用の数値を「マイナス表記」へとフロント成形
+            value = "-" + value;
+        } else {
+            // 光回線系統（opt）は従来の通常デシベルしきい値判定
+            unitLabel = "dB";
+            if (value < optLow) { statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; }
+            else if (value < optHigh) { statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; }
+        }
 
         let chHtml = fpuChannel ? `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-black px-1.5 py-0.5 rounded font-mono">${fpuChannel}</span>` : `<span class="text-slate-600 text-xs">-- Ch</span>`;
         let memoHtml = "";
@@ -964,7 +982,7 @@
                 <div>
                     <div class="flex items-center justify-between w-full">
                         ${chHtml}
-                        <div class="${statusColor} text-2xl font-mono font-black tracking-tighter">${value}<span class="text-xs font-sans ml-0.5 text-slate-400">dB</span></div>
+                        <div class="${statusColor} text-2xl font-mono font-black tracking-tighter">${value}<span class="text-[10px] font-sans ml-0.5 text-slate-400">${unitLabel}</span></div>
                     </div>
                     ${specsHtml}
                 </div>
@@ -1244,7 +1262,7 @@
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート（opt完全移行＆上書きUpsert同期）
+    // ⚡ CSV一括インポート
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1294,11 +1312,11 @@
                 const columns = lines[i].split(',');
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
-                if (i === 0) continue; // 1行目強制スキップ
+                if (i === 0) continue; 
 
                 const name = columns[0]?.trim() || "";
                 let category = columns[1]?.trim().toLowerCase() || "opt";
-                if(category === 'sub') category = 'opt'; // 下位互換処理
+                if(category === 'sub') category = 'opt'; 
 
                 const fpuChannel = columns[2]?.trim() || "";
                 const modType = columns[3]?.trim() || "";
