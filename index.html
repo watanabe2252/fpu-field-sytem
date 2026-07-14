@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FPU回線管理">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link class="apple-touch-icon" href="icon.png">
     
     <!-- 📦 外部ライブラリ CDN (安定版に固定) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.7"></script>
@@ -351,13 +351,13 @@
                 </h2>
                 <table>
                     <thead>
-                        <!-- 🌟  th見出し行のフォントサイズを text-xs ➔ text-base (16px) へ拡大し、強固なウェイトとカラーを付与 -->
-                        <tr class="text-base font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left pb-1.5 pl-2 text-slate-400 font-bold text-xs uppercase">対象回線</th>
-                            <th class="pb-1.5 text-accentOrange">走行</th>
-                            <th class="pb-1.5 text-sky-400">技術</th>
-                            <th class="pb-1.5 text-emerald-400">総合リハ</th>
-                            <th class="pb-1.5 text-rose-500">本番</th>
+                        <!-- 🌟 th見出しを text-base font-black (16pxの特太字) へ確実にサイズアップし、それぞれ鮮やかな系統カラーに設定 -->
+                        <tr class="tracking-wider border-b border-borderStroke/40 text-base font-black">
+                            <th class="text-left pb-2 pl-2 text-slate-400 font-bold text-xs uppercase w-[135px]">対象回線</th>
+                            <th class="pb-2 text-orange-400">走行</th>
+                            <th class="pb-2 text-sky-400">技術</th>
+                            <th class="pb-2 text-emerald-400">総合リハ</th>
+                            <th class="pb-2 text-rose-500">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-main" class="divide-y divide-borderStroke/30"></tbody>
@@ -371,12 +371,12 @@
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-base font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left pb-1.5 pl-2 text-slate-400 font-bold text-xs uppercase">対象回線</th>
-                            <th class="pb-1.5 text-accentOrange">走行</th>
-                            <th class="pb-1.5 text-sky-400">技術</th>
-                            <th class="pb-1.5 text-emerald-400">総合リハ</th>
-                            <th class="pb-1.5 text-rose-500">本番</th>
+                        <tr class="tracking-wider border-b border-borderStroke/40 text-base font-black">
+                            <th class="text-left pb-2 pl-2 text-slate-400 font-bold text-xs uppercase w-[135px]">対象回線</th>
+                            <th class="pb-2 text-orange-400">走行</th>
+                            <th class="pb-2 text-sky-400">技術</th>
+                            <th class="pb-2 text-emerald-400">総合リハ</th>
+                            <th class="pb-2 text-rose-500">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-relay" class="divide-y divide-borderStroke/30"></tbody>
@@ -390,12 +390,12 @@
                 </h2>
                 <table>
                     <thead>
-                        <tr class="text-base font-black tracking-wider border-b border-borderStroke/40">
-                            <th class="text-left pb-1.5 pl-2 text-slate-400 font-bold text-xs uppercase">対象回線</th>
-                            <th class="pb-1.5 text-accentOrange">走行</th>
-                            <th class="pb-1.5 text-sky-400">技術</th>
-                            <th class="pb-1.5 text-emerald-400">総合リハ</th>
-                            <th class="pb-1.5 text-rose-500">本番</th>
+                        <tr class="tracking-wider border-b border-borderStroke/40 text-base font-black">
+                            <th class="text-left pb-2 pl-2 text-slate-400 font-bold text-xs uppercase w-[135px]">対象回線</th>
+                            <th class="pb-2 text-orange-400">走行</th>
+                            <th class="pb-2 text-sky-400">技術</th>
+                            <th class="pb-2 text-emerald-400">総合リハ</th>
+                            <th class="pb-2 text-rose-500">本番</th>
                         </tr>
                     </thead>
                     <tbody id="group-opt" class="divide-y divide-borderStroke/30"></tbody>
@@ -942,7 +942,6 @@
                 statusColor = 'text-amber-400'; bgStyle = 'bg-amber-950/20 border-amber-500/20'; 
             }
         } else {
-            // 🌟 OPT（光回線系統）も指示通りの受光レベルしきい値(-21dBm / -15dBm)で条件分岐
             if (value >= optLow) { 
                 statusColor = 'text-rose-400'; bgStyle = 'bg-rose-950/30 border-rose-500/20'; 
             } else if (value > optHigh) { 
@@ -1148,7 +1147,7 @@
     async function toggleUserRole(userId, currentRole) {
         if (!sb) return;
         const nextRole = (currentRole === 'admin') ? 'staff' : 'admin';
-        const { error } = await sb.from('user_roles').update({ role: nextRole }).eq('id', userId);
+        const { error = null } = await sb.from('user_roles').update({ role: nextRole }).eq('id', userId);
         if (!error) {
             const mySession = await sb.auth.getSession();
             if (userId === mySession.data.session?.user.id) await syncUserRoleAndInit(userId, mySession.data.session?.user.email);
@@ -1254,7 +1253,6 @@
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
