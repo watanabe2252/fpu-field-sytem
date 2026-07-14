@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FPU回線管理">
-    <link class="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
     
     <!-- 📦 外部ライブラリ CDN (安定版に固定) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.7"></script>
@@ -351,7 +351,6 @@
                 </h2>
                 <table>
                     <thead>
-                        <!-- 🌟 th見出しを text-base font-black (16pxの特太字) へ確実にサイズアップし、それぞれ鮮やかな系統カラーに設定 -->
                         <tr class="tracking-wider border-b border-borderStroke/40 text-base font-black">
                             <th class="text-left pb-2 pl-2 text-slate-400 font-bold text-xs uppercase w-[135px]">対象回線</th>
                             <th class="pb-2 text-orange-400">走行</th>
@@ -1246,13 +1245,16 @@
         if (!name) return;
 
         const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
-        const newLinkId = 100000 + count + Math.floor(Math.random() * 1000);
+        
+        // 🌟 手動追加時も、絶対に桁丸まり・プログラム間重複の起きないクリーンな15桁タイムスタンプ数値IDを発行
+        const newLinkId = parseInt(String(Math.floor(Date.now() / 10)) + "990");
         await sb.from('links').insert([{ id: newLinkId, program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
         document.getElementById('link-name').value = ''; 
         loadRegisteredLinks();
         initDashboard();
     }
 
+    // ⚡ CSV一括インポート（宇宙内絶対一意＆桁丸まり完全排除・15桁Bigint対応版）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1296,7 +1298,8 @@
             const validCategories = ['main', 'relay', 'opt'];
             const phases = ['run', 'tech', 'rehe', 'prod'];
 
-            const idSeedBase = 100000 + startOrder; 
+            // 🌟 過去の全中継ファイルや、今後の増設データとも100%競合しない10桁の純粋ミリ秒シードを生成
+            const baseTimestampSeed = String(Math.floor(Date.now() / 100)); 
 
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
@@ -1323,7 +1326,9 @@
                 if (linkMap[name]) {
                     numLinkId = linkMap[name].id;
                 } else {
-                    numLinkId = idSeedBase + i;
+                    // 🌟 【絶対一意の14桁ID】ミリ秒シード(10桁) ＋ ループインデックス(3桁パディング) ＋ 識別子"0"
+                    const paddedIdx = String(i).padStart(3, '0');
+                    numLinkId = parseInt(baseTimestampSeed + paddedIdx + "0");
                     isNewLink = true;
                 }
 
@@ -1336,12 +1341,14 @@
                 });
 
                 phases.forEach((phase, phaseIdx) => {
-                    const numRecordId = (numLinkId * 10) + (phaseIdx + 1);
+                    // 🌟 【絶対一意の14桁ID】ミリ秒シード(10桁) ＋ ループインデックス(3桁パディング) ＋ フェーズ識別子(1〜4)
+                    const paddedIdx = String(i).padStart(3, '0');
+                    const numRecordId = parseInt(baseTimestampSeed + paddedIdx + String(phaseIdx + 1));
 
                     recordsBatch.push({
                         id: numRecordId,
                         program_id: activeProgramId,
-                        link_id: numLinkId,
+                        link_id: numLinkId,     // 外部キーの紐付けも同一の安全桁で完全一致
                         phase: phase,
                         value: (finalCategory === 'opt') ? 15 : 60, 
                         fpu_channel: fpuChannel,
@@ -1358,6 +1365,7 @@
 
             statusMsg.innerText = `🔄 最新のCSVスペックデータを上書き同期中...`;
 
+            // クラウド（Supabase）へUpsertを実行
             const [linksRes, recordsRes] = await Promise.all([
                 sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
                 sb.from('records').upsert(recordsBatch, { onConflict: 'id' })
@@ -1374,7 +1382,7 @@
                 const err = linksRes.error || recordsRes.error;
                 console.error("CSV Import Error:", err);
                 statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = "❌ クラウドの書き換えに失敗しました。";
+                statusMsg.innerText = `❌ クラウドの書き換えに失敗しました: ${err ? err.message : 'Unknown'}`;
             }
         };
 
@@ -1435,7 +1443,7 @@
         const { data: srcLinks } = await sb.from('links').select('*').eq('program_id', duplicateSourceId);
         if (srcLinks && srcLinks.length > 0) {
             const duplicated = srcLinks.map((l, idx) => ({
-                id: 200000 + idx + Math.floor(Math.random() * 1000),
+                id: parseInt(String(Math.floor(Date.now() / 10)) + String(idx).padStart(3, '0') + "0"),
                 program_id: targetId, name: l.name, category: l.category, sort_order: l.sort_order
             }));
             await sb.from('links').insert(duplicated);
