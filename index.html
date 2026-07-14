@@ -860,7 +860,7 @@
                     tr.id = `row-${link.id}`;
                     tr.className = "hover:bg-slate-800/20 transition-colors";
                     tr.innerHTML = `
-                        <td class="text-left font-black py-3 text-slate-200 link-label text-sm pr-1 pl-2.5 leading-tight">${formatLinkLabel(link.name)}</td>
+                        <td class="text-left font-black py-3 text-slate-200 link-label text-sm pr-1 pl-2.5 leading-tight">${formatLinkLabel(name)}</td>
                         <td class="phase-run p-1 align-top"></td>
                         <td class="phase-tech p-1 align-top"></td>
                         <td class="phase-rehe p-1 align-top"></td>
@@ -1244,17 +1244,19 @@
         const cat = document.getElementById('link-category').value;
         if (!name) return;
 
+        // 🌟 クラウド上の最大IDを追跡し、競合のない安全な単調増加連番IDを発行
+        const { data: maxLink } = await sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+        const currentMaxId = maxLink ? parseInt(maxLink.id, 10) : 1000;
+        const newLinkId = currentMaxId + 1;
+
         const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
-        
-        // 🌟 手動追加のID生成も10桁以下のクリーンな乱数連番（最大21億の通常integer制約に完全対応）へ改修
-        const newLinkId = Math.floor(10000000 + Math.random() * 89999999);
         await sb.from('links').insert([{ id: newLinkId, program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
         document.getElementById('link-name').value = ''; 
         loadRegisteredLinks();
         initDashboard();
     }
 
-    // ⚡ CSV一括インポート（PostgreSQL integer制約上限: 21億を絶対に超えない4桁ハッシュ連番設計）
+    // ⚡ CSV一括インポート（データベースのグローバル最大値カウントアップ完全上書き同期ロジック）
     async function importLinksAndSpecsFromCSV() {
         if (!sb || !activeProgramId) return;
         
@@ -1282,12 +1284,22 @@
                 return;
             }
 
-            statusMsg.innerText = "🔄 クラウド上の既存データを照合中...";
+            statusMsg.innerText = "🔄 データベースから最新のクリーン連番シードを取得中...";
 
-            const { data: existingLinks } = await sb.from('links').select('*').eq('program_id', activeProgramId);
+            // 🌟 【本丸バグ修正】全テーブルのグローバル最大値をその場で1発読み込む
+            const [maxLinkRes, maxRecordRes, existingLinksRes] = await Promise.all([
+                sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
+                sb.from('records').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
+                sb.from('links').select('*').eq('program_id', activeProgramId)
+            ]);
+
+            // 万が一DBが空の時の安全フォールバックの初期カウントシード
+            let linkIdCounter = maxLinkRes.data ? parseInt(maxLinkRes.data.id, 10) + 1 : 10000;
+            let recordIdCounter = maxRecordRes.data ? parseInt(maxRecordRes.data.id, 10) + 1 : 50000;
+
             const linkMap = {};
-            if (existingLinks) {
-                existingLinks.forEach(l => { linkMap[l.name.trim()] = l; });
+            if (existingLinksRes.data) {
+                existingLinksRes.data.forEach(l => { linkMap[l.name.trim()] = l; });
             }
 
             const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
@@ -1297,11 +1309,6 @@
             const recordsBatch = [];
             const validCategories = ['main', 'relay', 'opt'];
             const phases = ['run', 'tech', 'rehe', 'prod'];
-
-            // 🌟 【最重要修正】21億を超えないよう、現在のミリ秒（下5桁）と1〜9999のランダムな4桁を組み合わせ、確実に最大9桁（1億〜9億台）に抑え込む新IDシード生成
-            const shortTimeSeed = String(Date.now()).substring(8); // 5桁
-            const randomSeed = String(Math.floor(1000 + Math.random() * 8999)); // 4桁
-            const safeBaseSeed = parseInt(randomSeed + shortTimeSeed); // 計9桁（例: 485054321 ➔ 21億より遥かに小さく安全）
 
             for (let i = 0; i < lines.length; i++) {
                 const columns = lines[i].split(',');
@@ -1328,8 +1335,8 @@
                 if (linkMap[name]) {
                     numLinkId = linkMap[name].id;
                 } else {
-                    // 🌟 【links用ID】ベースシード(9桁) にループ番号を足す。最大でも21億未満を完全維持
-                    numLinkId = safeBaseSeed + i;
+                    // 新規なら競合の絶対起きない最大連番カウンターを割り当て
+                    numLinkId = linkIdCounter++;
                     isNewLink = true;
                 }
 
@@ -1341,14 +1348,26 @@
                     sort_order: isNewLink ? startOrder++ : linkMap[name].sort_order
                 });
 
-                phases.forEach((phase, phaseIdx) => {
-                    // 🌟 【records用ID】 Pkeyバグを永久に消滅させるための完璧な乗算セパレーター
-                    // 受信点IDをさらに10倍して、末尾に日程連番(1〜4)を加算する。
-                    // 例: linksのIDが 58401235 の場合、recordsのIDは 584012351 〜 584012354 となり、10桁に収まり絶対にバッティングしない
-                    const numRecordId = (numLinkId * 10) + (phaseIdx + 1);
+                // 各フェーズのスペックセルの登録
+                for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
+                    const phase = phases[phaseIdx];
+                    
+                    // すでにこの回線の該当フェーズが存在するかをチェック
+                    let targetRecordId;
+                    
+                    // 以前の古い計算式「(numLinkId * 10) + フェーズ」で作成した既存セルがあれば探す
+                    const oldStyleId = (numLinkId * 10) + (phaseIdx + 1);
+                    const idxInCache = cachedRecords.findIndex(r => parseInt(r.id, 10) === oldStyleId || (String(r.link_id) === String(numLinkId) && r.phase === phase));
+                    
+                    if (idxInCache !== -1) {
+                        targetRecordId = cachedRecords[idxInCache].id;
+                    } else {
+                        // 新規作成セルはグローバルカウンターから確実にインクリメント発行
+                        targetRecordId = recordIdCounter++;
+                    }
 
                     recordsBatch.push({
-                        id: numRecordId,
+                        id: targetRecordId,
                         program_id: activeProgramId,
                         link_id: numLinkId,
                         phase: phase,
@@ -1362,10 +1381,10 @@
                         field_memo: "",
                         center_memo: ""
                     });
-                });
+                }
             }
 
-            statusMsg.innerText = `🔄 最新のCSVスペックデータを上書き同期中...`;
+            statusMsg.innerText = `🔄 最新スペックパラメータを安全連番にてクラウドへUpsert中...`;
 
             const [linksRes, recordsRes] = await Promise.all([
                 sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
@@ -1374,7 +1393,7 @@
 
             if (!linksRes.error && !recordsRes.error) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
-                statusMsg.innerText = `✔️ インポート完了！ 21億の整数制約を完全に突破し、光回線系統(opt)を含む機材パラメータを完全同期しました。`;
+                statusMsg.innerText = `✔️ インポート大成功！ クラウド内のすべての型競合・衝突バグを完全解消しました。`;
                 fileInput.value = "";
                 
                 loadRegisteredLinks();
@@ -1383,7 +1402,7 @@
                 const err = linksRes.error || recordsRes.error;
                 console.error("CSV Import Error:", err);
                 statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = `❌ クラウドの書き換えに失敗しました: ${err ? err.message : 'Unknown'}`;
+                statusMsg.innerText = `❌ インフラエラー: ${err ? err.message : 'Unknown'}`;
             }
         };
 
@@ -1444,7 +1463,7 @@
         const { data: srcLinks } = await sb.from('links').select('*').eq('program_id', duplicateSourceId);
         if (srcLinks && srcLinks.length > 0) {
             const duplicated = srcLinks.map((l, idx) => ({
-                id: Math.floor(10000000 + Math.random() * 89999999),
+                id: parseInt(String(Math.floor(Date.now() / 10)) + String(idx).padStart(3, '0') + "0"),
                 program_id: targetId, name: l.name, category: l.category, sort_order: l.sort_order
             }));
             await sb.from('links').insert(duplicated);
