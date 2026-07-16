@@ -620,7 +620,7 @@
 
             <div class="bg-cardBg border border-borderStroke p-5 rounded-2xl shadow-xl space-y-4">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-wider"><i class="fas fa-sort-amount-down text-accentBlue"></i> ドラッグ順序入れ替え</h2>
-                <div class="space-y-3">
+                <div class="space-y-3" id="maint-links-wrapper">
                     <div><span class="text-xs text-accentBlue font-bold">【本線】</span><div id="maint-box-main" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
                     <div><span class="text-xs text-accentOrange font-bold">【リレー】</span><div id="maint-box-relay" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
                     <div><span class="text-xs text-emerald-400 font-bold">【光回線】</span><div id="maint-box-opt" class="space-y-1.5 bg-bgDark/40 p-2 rounded-xl min-h-[50px] border border-borderStroke/40"></div></div>
@@ -737,9 +737,24 @@
         }
     }
 
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return "";
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function formatLinkLabel(name) {
         if (!name) return "";
-        return name.replace(/\s*([➔→\-\>=\>]+)\s*/g, '<br><span class="text-accentBlue font-bold text-sm">➔</span> ');
+        // 矢印記号の前後で分割し、各テキスト片だけをエスケープしてから改行用HTMLで繋ぐ
+        const parts = String(name).split(/\s*([➔→\-\>=\>]+)\s*/);
+        return parts.map((part, idx) => {
+            if (idx % 2 === 1) return '<br><span class="text-accentBlue font-bold text-sm">➔</span> ';
+            return escapeHtml(part);
+        }).join('');
     }
 
     async function handleLogin() {
@@ -799,22 +814,24 @@
 
         if (data && data.length > 0) {
             listBox.innerHTML = data.map(p => {
+                const safeId = escapeHtml(p.id);
+                const safeTitle = escapeHtml(p.title);
                 let actionButtons = "";
                 if (currentUserRole === 'admin') {
                     actionButtons = `
-                        <button onclick="openDuplicateModal('${p.id}', '${p.title}')" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md"><i class="fas fa-copy"></i></button>
-                        <button onclick="deleteProgramEntirely('${p.id}', '${p.title}')" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md"><i class="fas fa-trash-alt"></i></button>
+                        <button data-action="duplicate-program" data-id="${safeId}" data-title="${safeTitle}" class="text-slate-400 hover:text-amber-400 text-xs p-2 bg-slate-800 rounded-md"><i class="fas fa-copy"></i></button>
+                        <button data-action="delete-program" data-id="${safeId}" data-title="${safeTitle}" class="text-slate-400 hover:text-rose-400 text-xs p-2 bg-slate-800 rounded-md"><i class="fas fa-trash-alt"></i></button>
                     `;
                 }
                 return `
                     <div class="bg-cardBg border border-borderStroke p-4 rounded-xl flex justify-between items-center">
-                        <div onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="text-left truncate flex-1 cursor-pointer">
-                            <div class="text-sm font-black text-slate-100">${p.title}</div>
-                            <div class="text-xs text-slate-500 font-mono">ID: ${p.id}</div>
+                        <div data-action="select-program" data-id="${safeId}" data-title="${safeTitle}" class="text-left truncate flex-1 cursor-pointer">
+                            <div class="text-sm font-black text-slate-100">${safeTitle}</div>
+                            <div class="text-xs text-slate-500 font-mono">ID: ${safeId}</div>
                         </div>
                         <div class="flex items-center gap-1.5 ml-2">
                             ${actionButtons}
-                            <button onclick="selectProgramAndStart('${p.id}', '${p.title}')" class="text-xs font-bold bg-slate-800 text-amber-400 px-3 py-2 rounded-md border border-slate-700">接続</button>
+                            <button data-action="select-program" data-id="${safeId}" data-title="${safeTitle}" class="text-xs font-bold bg-slate-800 text-amber-400 px-3 py-2 rounded-md border border-slate-700">接続</button>
                         </div>
                     </div>`;
             }).join('');
@@ -822,6 +839,16 @@
             listBox.innerHTML = '<div class="text-xs text-slate-500 font-bold text-center py-6">ファイルが存在しません。</div>';
         }
     }
+
+    document.getElementById('program-list-box').addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+        const id = target.dataset.id;
+        const title = target.dataset.title;
+        if (target.dataset.action === 'select-program') selectProgramAndStart(id, title);
+        else if (target.dataset.action === 'duplicate-program') openDuplicateModal(id, title);
+        else if (target.dataset.action === 'delete-program') deleteProgramEntirely(id, title);
+    });
 
     function selectProgramAndStart(id, title) {
         activeProgramId = id; activeProgramTitle = title;
@@ -947,18 +974,27 @@
 
         const displayValue = "-" + value;
 
-        let chHtml = fpuChannel ? `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-black px-1.5 py-0.5 rounded font-mono">${fpuChannel}</span>` : `<span class="text-slate-600 text-xs">-- Ch</span>`;
+        const safeFpuChannel = escapeHtml(fpuChannel);
+        const safeFMemo = escapeHtml(fMemo);
+        const safeCMemo = escapeHtml(cMemo);
+        const safeModType = escapeHtml(modType);
+        const safePresetType = escapeHtml(presetType);
+        const safeTsRate = escapeHtml(tsRate);
+        const safeTxModel = escapeHtml(txModel);
+        const safeRxModel = escapeHtml(rxModel);
+
+        let chHtml = fpuChannel ? `<span class="bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-black px-1.5 py-0.5 rounded font-mono">${safeFpuChannel}</span>` : `<span class="text-slate-600 text-xs">-- Ch</span>`;
         let memoHtml = "";
-        if (fMemo) memoHtml += `<div class="text-xs text-emerald-400 font-bold truncate bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-800/30">現:${fMemo}</div>`;
-        if (cMemo) memoHtml += `<div class="text-xs text-accentBlue font-bold truncate bg-sky-950/40 px-1 py-0.5 rounded border border-sky-800/30">セ:${cMemo}</div>`;
+        if (fMemo) memoHtml += `<div class="text-xs text-emerald-400 font-bold truncate bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-800/30">現:${safeFMemo}</div>`;
+        if (cMemo) memoHtml += `<div class="text-xs text-accentBlue font-bold truncate bg-sky-950/40 px-1 py-0.5 rounded border border-sky-800/30">セ:${safeCMemo}</div>`;
 
         let specsHtml = `
             <div class="grid grid-cols-1 gap-y-0.5 text-xs text-slate-300 font-mono text-left w-full bg-slate-950/60 px-1.5 py-1 rounded border border-slate-800 mt-1.5">
-                <div class="truncate flex justify-between"><span class="text-slate-500 font-sans shrink-0">変調:</span><span class="text-right truncate flex-1 pl-1">${modType || '-'}</span></div>
-                <div class="truncate flex justify-between"><span class="text-slate-500 font-sans shrink-0">プリセット:</span><span class="text-right truncate flex-1 pl-1">${presetType || '-'}</span></div>
-                <div class="truncate flex justify-between border-b border-slate-800/50 pb-0.5 mb-0.5"><span class="text-slate-500 font-sans shrink-0">TSレート:</span><span class="text-right truncate flex-1 pl-1">${tsRate || '-'}</span></div>
-                <div class="truncate flex justify-between text-slate-400"><span class="text-slate-500 font-sans shrink-0">TX:</span><span class="text-right truncate flex-1 pl-1">${txModel || '-'}</span></div>
-                <div class="truncate flex justify-between text-slate-400"><span class="text-slate-500 font-sans shrink-0">RX:</span><span class="text-right truncate flex-1 pl-1">${rxModel || '-'}</span></div>
+                <div class="truncate flex justify-between"><span class="text-slate-500 font-sans shrink-0">変調:</span><span class="text-right truncate flex-1 pl-1">${safeModType || '-'}</span></div>
+                <div class="truncate flex justify-between"><span class="text-slate-500 font-sans shrink-0">プリセット:</span><span class="text-right truncate flex-1 pl-1">${safePresetType || '-'}</span></div>
+                <div class="truncate flex justify-between border-b border-slate-800/50 pb-0.5 mb-0.5"><span class="text-slate-500 font-sans shrink-0">TSレート:</span><span class="text-right truncate flex-1 pl-1">${safeTsRate || '-'}</span></div>
+                <div class="truncate flex justify-between text-slate-400"><span class="text-slate-500 font-sans shrink-0">TX:</span><span class="text-right truncate flex-1 pl-1">${safeTxModel || '-'}</span></div>
+                <div class="truncate flex justify-between text-slate-400"><span class="text-slate-500 font-sans shrink-0">RX:</span><span class="text-right truncate flex-1 pl-1">${safeRxModel || '-'}</span></div>
             </div>`;
 
         cell.innerHTML = `
@@ -1001,7 +1037,7 @@
         tsSelect.innerHTML = '<option value="">-- 未設定 --</option>';
 
         data.forEach(item => {
-            const opt = `<option value="${item.value}">${item.label}</option>`;
+            const opt = `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`;
             if (item.category === 'modulation') modSelect.insertAdjacentHTML('beforeend', opt);
             if (item.category === 'preset') presetSelect.insertAdjacentHTML('beforeend', opt);
             if (item.category === 'ts_rate') tsSelect.insertAdjacentHTML('beforeend', opt);
@@ -1012,7 +1048,7 @@
         if (!sb || !activeProgramId) return;
         const { data } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
         if (data) {
-            document.getElementById('link-select').innerHTML = data.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+            document.getElementById('link-select').innerHTML = data.map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
             fetchCurrentRecord();
         }
     }
@@ -1074,11 +1110,9 @@
 
         syncDirectDBInput();
 
-        const baseRecord = {
-            program_id: activeProgramId,
-            link_id: linkId,
-            field_memo: document.getElementById('input-field-memo').value.trim(),
-            center_memo: document.getElementById('input-center-memo').value.trim(),
+        // ⚠ スペック項目(機器・チャンネル情報)は全日程一括反映の対象。
+        // メモは現在のフェーズにのみ適用し、他フェーズの既存メモは保持する。
+        const specFields = {
             fpu_channel: document.getElementById('channel-custom-input').value.trim(),
             mod_type: document.getElementById('input-mod-type').value,
             preset_type: document.getElementById('input-preset-type').value,
@@ -1086,21 +1120,32 @@
             tx_model: document.getElementById('input-tx-model').value.trim(),
             rx_model: document.getElementById('input-rx-model').value.trim()
         };
+        const fieldMemo = document.getElementById('input-field-memo').value.trim();
+        const centerMemo = document.getElementById('input-center-memo').value.trim();
 
         let promises = [];
         const allPhases = batchAll ? ['run', 'tech', 'rehe', 'prod'] : [currentPhase];
 
         for (const phase of allPhases) {
             const { data: match } = await sb.from('records')
-                .select('id, value')
+                .select('id, value, field_memo, center_memo')
                 .eq('program_id', activeProgramId)
                 .eq('link_id', linkId)
                 .eq('phase', phase)
                 .maybeSingle();
 
-            let valToSubmit = (phase === currentPhase) ? parseInt(currentVal, 10) : (match ? match.value : 60);
-            
-            let payload = { ...baseRecord, phase: phase, value: valToSubmit };
+            const isCurrentPhase = (phase === currentPhase);
+            let valToSubmit = isCurrentPhase ? parseInt(currentVal, 10) : (match ? match.value : 60);
+
+            let payload = {
+                program_id: activeProgramId,
+                link_id: linkId,
+                phase: phase,
+                value: valToSubmit,
+                ...specFields,
+                field_memo: isCurrentPhase ? fieldMemo : (match ? (match.field_memo || "") : ""),
+                center_memo: isCurrentPhase ? centerMemo : (match ? (match.center_memo || "") : "")
+            };
             if (match && match.id) payload.id = match.id;
 
             promises.push(sb.from('records').upsert(payload, { onConflict: 'id' }));
@@ -1131,14 +1176,20 @@
             const isAdmin = u.role === 'admin';
             return `
                 <div class="bg-bgDark border border-borderStroke p-3 rounded-xl flex items-center justify-between gap-2">
-                    <div class="min-w-0 flex-1"><div class="text-xs font-black text-slate-200 truncate">${u.email}</div></div>
+                    <div class="min-w-0 flex-1"><div class="text-xs font-black text-slate-200 truncate">${escapeHtml(u.email)}</div></div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isAdmin ? 'bg-amber-950 text-amber-400' : 'bg-slate-800 text-slate-400'}">${isAdmin ? '管理者' : '現場スタッフ'}</span>
-                        <button onclick="toggleUserRole('${u.id}', '${u.role}')" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-bold text-accentBlue transition-all">権限切替</button>
+                        <button data-action="toggle-role" data-id="${escapeHtml(u.id)}" data-role="${escapeHtml(u.role)}" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-bold text-accentBlue transition-all">権限切替</button>
                     </div>
                 </div>`;
         }).join('');
     }
+
+    document.getElementById('user-role-list-box').addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action="toggle-role"]');
+        if (!target) return;
+        toggleUserRole(target.dataset.id, target.dataset.role);
+    });
 
     async function toggleUserRole(userId, currentRole) {
         if (!sb) return;
@@ -1153,7 +1204,7 @@
 
     async function loadDashboardLinkSelect() {
         const { data } = await sb.from('links').select('*').eq('program_id', activeProgramId).order('sort_order', { ascending: true });
-        if (data) document.getElementById('dash-link-select').innerHTML = data.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+        if (data) document.getElementById('dash-link-select').innerHTML = data.map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
     }
 
     async function submitDashCenterMemo() {
@@ -1202,10 +1253,11 @@
                 if (l.category === 'relay') targetBox = boxRelay;
                 if (l.category === 'opt') targetBox = boxOpt;
 
+                const safeId = escapeHtml(l.id);
                 const html = `
-                    <div data-id="${l.id}" class="bg-bgDark border border-borderStroke px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-grab">
-                        <div class="text-xs font-bold text-slate-200 truncate">${l.name}</div>
-                        <button onclick="deleteLink('${l.id}')" class="text-rose-400 text-xs px-2 py-1"><i class="fas fa-trash-alt"></i></button>
+                    <div data-id="${safeId}" class="bg-bgDark border border-borderStroke px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-grab">
+                        <div class="text-xs font-bold text-slate-200 truncate">${escapeHtml(l.name)}</div>
+                        <button data-action="delete-link" data-link-id="${safeId}" class="text-rose-400 text-xs px-2 py-1"><i class="fas fa-trash-alt"></i></button>
                     </div>`;
                 targetBox.insertAdjacentHTML('beforeend', html);
             });
@@ -1217,6 +1269,12 @@
         sortableInstances.relay = new Sortable(boxRelay, sortOptions);
         sortableInstances.opt = new Sortable(boxOpt, sortOptions);
     }
+
+    document.getElementById('maint-links-wrapper').addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action="delete-link"]');
+        if (!target) return;
+        deleteLink(target.dataset.linkId);
+    });
 
     function destroyAllSortable() {
         Object.keys(sortableInstances).forEach(k => { if (sortableInstances[k]) { sortableInstances[k].destroy(); sortableInstances[k] = null; } });
@@ -1241,15 +1299,47 @@
         const cat = document.getElementById('link-category').value;
         if (!name) return;
 
-        const { data: maxLink } = await sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-        const currentMaxId = maxLink ? parseInt(maxLink.id, 10) : 1000;
-        const newLinkId = currentMaxId + 1;
-
+        // id はDB側の自動採番(identity)に任せる。(program_id, name) のUNIQUE制約が重複を防ぐ。
         const { count } = await sb.from('links').select('*', { count: 'exact', head: true }).eq('program_id', activeProgramId);
-        await sb.from('links').insert([{ id: newLinkId, program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
-        document.getElementById('link-name').value = ''; 
+        const { error } = await sb.from('links').insert([{ program_id: activeProgramId, name: name, category: cat, sort_order: count || 0 }]);
+        if (error) {
+            alert(error.message.includes('duplicate') || error.code === '23505'
+                ? '同じ名前の受信点がすでに登録されています。'
+                : '受信点の追加に失敗しました: ' + error.message);
+            return;
+        }
+        document.getElementById('link-name').value = '';
         loadRegisteredLinks();
         initDashboard();
+    }
+
+    // ダブルクォート囲み・カンマ内包に対応した簡易CSV1行パーサー
+    function parseCsvLine(line) {
+        const result = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (line[i + 1] === '"') { current += '"'; i++; }
+                    else { inQuotes = false; }
+                } else {
+                    current += c;
+                }
+            } else {
+                if (c === '"') {
+                    inQuotes = true;
+                } else if (c === ',') {
+                    result.push(current);
+                    current = "";
+                } else {
+                    current += c;
+                }
+            }
+        }
+        result.push(current);
+        return result;
     }
 
     // ⚡ CSV一括インポート（複合ユニークKeyデータ構造 完全適合上書き版）
@@ -1282,23 +1372,18 @@
 
             statusMsg.innerText = "🔄 データベースから既存の複合キーマップをロード中...";
 
-            // 🌟 【本質の修正】現在のクラウド上の全リンク、および全レコード（セル）の実態を丸ごとロード
-            const [maxLinkRes, maxRecordRes, existingLinksRes, existingRecordsRes] = await Promise.all([
-                sb.from('links').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
-                sb.from('records').select('id').order('id', { ascending: false }).limit(1).maybeSingle(),
+            // 現在のクラウド上の全リンク、および全レコード（セル）の実態をロード
+            const [existingLinksRes, existingRecordsRes] = await Promise.all([
                 sb.from('links').select('*').eq('program_id', activeProgramId),
                 sb.from('records').select('*').eq('program_id', activeProgramId)
             ]);
-
-            let linkIdCounter = maxLinkRes.data ? parseInt(maxLinkRes.data.id, 10) + 1 : 10000;
-            let recordIdCounter = maxRecordRes.data ? parseInt(maxRecordRes.data.id, 10) + 1 : 50000;
 
             const linkMap = {};
             if (existingLinksRes.data) {
                 existingLinksRes.data.forEach(l => { linkMap[l.name.trim()] = l; });
             }
 
-            // 🌟 既存のレコードを「link_id + '_' + phase」の文字列キーでマッピングする超高速参照ルックアップストアを構築
+            // 既存のレコードを「link_id + '_' + phase」の文字列キーでマッピングする参照ルックアップストアを構築
             const recordUniqueMap = {};
             if (existingRecordsRes.data) {
                 existingRecordsRes.data.forEach(r => {
@@ -1310,27 +1395,27 @@
             let startOrder = count || 0;
 
             const linksBatch = [];
-            const recordsBatch = [];
+            const parsedRows = [];
             const validCategories = ['main', 'relay', 'opt'];
             const phases = ['run', 'tech', 'rehe', 'prod'];
 
             const csvDuplicateCheckMap = {};
 
             for (let i = 0; i < lines.length; i++) {
-                const columns = lines[i].split(',');
+                const columns = parseCsvLine(lines[i]);
                 if (columns.length === 0 || !columns[0].trim()) continue;
 
                 if (i === 0) continue; // ヘッダー行をスキップ
 
                 const name = columns[0]?.trim() || "";
-                
+
                 if (csvDuplicateCheckMap[name]) {
                     continue;
                 }
                 csvDuplicateCheckMap[name] = true;
 
                 let category = columns[1]?.trim().toLowerCase() || "opt";
-                if(category === 'sub') category = 'opt'; 
+                if(category === 'sub') category = 'opt';
 
                 const fpuChannel = columns[2]?.trim() || "";
                 const modType = columns[3]?.trim() || "";
@@ -1340,79 +1425,88 @@
                 const rxModel = columns[7]?.trim() || "";
 
                 const finalCategory = validCategories.includes(category) ? category : 'opt';
-                
-                let numLinkId;
-                let isNewLink = false;
-
-                if (linkMap[name]) {
-                    numLinkId = linkMap[name].id;
-                } else {
-                    numLinkId = linkIdCounter++;
-                    isNewLink = true;
-                }
+                const existingLink = linkMap[name];
 
                 linksBatch.push({
-                    id: numLinkId,
                     program_id: activeProgramId,
                     name: name,
                     category: finalCategory,
-                    sort_order: isNewLink ? startOrder++ : linkMap[name].sort_order
+                    sort_order: existingLink ? existingLink.sort_order : startOrder++
                 });
 
-                // 🌟 各フェーズのスペックセル生成・複合キー照合フェーズ
-                for (let phaseIdx = 0; phaseIdx < phases.length; phaseIdx++) {
-                    const phase = phases[phaseIdx];
-                    let targetRecordId;
-                    
-                    // 「同一受信点ID ＋ フェーズ文字列」の組み合わせがすでにDB上に存在するかルックアップ
-                    const cacheKey = `${numLinkId}_${phase}`;
-                    const existingRecordObject = recordUniqueMap[cacheKey];
+                parsedRows.push({ name, finalCategory, fpuChannel, modType, presetType, textTsRate, txModel, rxModel });
+            }
 
+            // id はDB側の自動採番(identity)に任せ、(program_id, name) のUNIQUE制約で
+            // 既存リンクとの重複を防ぐ。.select() で確定したidを引き取る。
+            statusMsg.innerText = `🔄 受信点情報をクラウドへUpsert中...`;
+            const { data: upsertedLinks, error: linksError } = await sb.from('links')
+                .upsert(linksBatch, { onConflict: 'program_id,name' })
+                .select();
+
+            if (linksError) {
+                console.error("CSV Import Error (links):", linksError);
+                statusMsg.className = "text-xs font-bold text-rose-400";
+                statusMsg.innerText = `❌ インフラエラー: ${linksError.message}`;
+                return;
+            }
+
+            const resolvedLinkIdByName = {};
+            (upsertedLinks || []).forEach(l => { resolvedLinkIdByName[l.name] = l.id; });
+
+            const recordsBatch = [];
+            parsedRows.forEach(row => {
+                const numLinkId = resolvedLinkIdByName[row.name];
+                if (numLinkId === undefined) return;
+
+                phases.forEach(phase => {
+                    // 「同一受信点ID ＋ フェーズ文字列」の組み合わせがすでにDB上に存在するかルックアップ
+                    const existingRecordObject = recordUniqueMap[`${numLinkId}_${phase}`];
+
+                    // 既存セルがあれば実測値・現場メモ・センターメモは保持し、スペック項目だけ上書きする
+                    let valueToUse, fieldMemoToUse, centerMemoToUse;
                     if (existingRecordObject) {
-                        // 既存の主キーIDを完全に流用（これにより、UNIQUEインフラ制約に絶対引っかからず上書きにスイッチする）
-                        targetRecordId = existingRecordObject.id;
+                        valueToUse = existingRecordObject.value;
+                        fieldMemoToUse = existingRecordObject.field_memo || "";
+                        centerMemoToUse = existingRecordObject.center_memo || "";
                     } else {
-                        // 完全に新しいセルであれば、最大値カウンターから新しい一意のIDをインクリメント発行
-                        targetRecordId = recordIdCounter++;
+                        valueToUse = (row.finalCategory === 'opt') ? 15 : 60;
+                        fieldMemoToUse = "";
+                        centerMemoToUse = "";
                     }
 
                     recordsBatch.push({
-                        id: targetRecordId,
                         program_id: activeProgramId,
                         link_id: numLinkId,
                         phase: phase,
-                        value: (finalCategory === 'opt') ? 15 : 60, 
-                        fpu_channel: fpuChannel,
-                        mod_type: modType,
-                        preset_type: presetType,
-                        ts_rate: textTsRate,
-                        tx_model: txModel,
-                        rx_model: rxModel,
-                        field_memo: "",
-                        center_memo: ""
+                        value: valueToUse,
+                        fpu_channel: row.fpuChannel,
+                        mod_type: row.modType,
+                        preset_type: row.presetType,
+                        ts_rate: row.textTsRate,
+                        tx_model: row.txModel,
+                        rx_model: row.rxModel,
+                        field_memo: fieldMemoToUse,
+                        center_memo: centerMemoToUse
                     });
-                }
-            }
+                });
+            });
 
             statusMsg.innerText = `🔄 データベースのインフラ複合制約を完全にクリアしました。クラウドへUpsert中...`;
 
-            const [linksRes, recordsRes] = await Promise.all([
-                sb.from('links').upsert(linksBatch, { onConflict: 'id' }),
-                sb.from('records').upsert(recordsBatch, { onConflict: 'id' })
-            ]);
+            const { error: recordsError } = await sb.from('records').upsert(recordsBatch, { onConflict: 'program_id,link_id,phase' });
 
-            if (!linksRes.error && !recordsRes.error) {
+            if (!recordsError) {
                 statusMsg.className = "text-xs font-bold text-accentGreen";
                 statusMsg.innerText = `✔️ インポート大成功！ クラウド内のすべてのデータ構造・制約バグを完全解消しました。`;
                 fileInput.value = "";
-                
+
                 loadRegisteredLinks();
-                initDashboard(); 
+                initDashboard();
             } else {
-                const err = linksRes.error || recordsRes.error;
-                console.error("CSV Import Error:", err);
+                console.error("CSV Import Error:", recordsError);
                 statusMsg.className = "text-xs font-bold text-rose-400";
-                statusMsg.innerText = `❌ インフラエラー: ${err ? err.message : 'Unknown'}`;
+                statusMsg.innerText = `❌ インフラエラー: ${recordsError.message}`;
             }
         };
 
@@ -1472,8 +1566,8 @@
         await sb.from('programs').insert([{ id: targetId, title: targetTitle }]);
         const { data: srcLinks } = await sb.from('links').select('*').eq('program_id', duplicateSourceId);
         if (srcLinks && srcLinks.length > 0) {
-            const duplicated = srcLinks.map((l, idx) => ({
-                id: Math.floor(10000000 + Math.random() * 89999999),
+            // id はDB側の自動採番(identity)に任せる
+            const duplicated = srcLinks.map(l => ({
                 program_id: targetId, name: l.name, category: l.category, sort_order: l.sort_order
             }));
             await sb.from('links').insert(duplicated);
